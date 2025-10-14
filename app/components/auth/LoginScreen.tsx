@@ -39,9 +39,9 @@ export const LoginScreen = ({
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-8 space-y-6 border border-yellow-500/20">
         <div className="text-center">
-          <Server className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+          <Server className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-glow" />
           <h1 className="text-4xl font-bold">Aratiri Admin</h1>
-          <p className="text-gray-400">Please sign in to continue</p>
+          <p className="text-gray-400">Sign in to continue</p>
         </div>
 
         {error && (

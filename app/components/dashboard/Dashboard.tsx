@@ -17,26 +17,42 @@ import { StatCard } from "../ui/StatCard";
 export const Dashboard = ({ setIsAuthenticated, setToken }: any) => {
   const [nodeInfo, setNodeInfo] = useState<NodeInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   const fetchNodeInfo = useCallback(async () => {
     try {
-      setLoading(true);
       const data = await apiCall("/admin/node-info");
       setNodeInfo(data);
     } catch (err: any) {
       setError("Failed to fetch node info: " + err.message);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchNodeInfo();
+    setLoading(true);
+    fetchNodeInfo().finally(() => setLoading(false));
   }, [fetchNodeInfo]);
 
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+
+    const startTime = Date.now();
+    setIsRefreshing(true);
+    setError("");
+
+    await fetchNodeInfo();
+
+    const elapsedTime = Date.now() - startTime;
+    const animationDuration = 1500;
+    const remainingTime = Math.max(0, animationDuration - elapsedTime);
+
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, remainingTime);
+  };
+
   const logout = async () => {
-    // Logic to clear tokens and state
     localStorage.removeItem("aratiri_accessToken");
     localStorage.removeItem("aratiri_refreshToken");
     setToken(null);
@@ -56,7 +72,17 @@ export const Dashboard = ({ setIsAuthenticated, setToken }: any) => {
       <header className="bg-gray-800/50 backdrop-blur-sm border-b border-yellow-500/20 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-bold">Aratiri Admin</h1>
+            <div
+              className="flex items-center space-x-3 cursor-pointer"
+              onClick={handleRefresh}
+            >
+              <Server
+                className={`w-8 h-8 text-yellow-400 ${
+                  isRefreshing ? "animate-spin-smooth" : ""
+                }`}
+              />
+              <h1 className="text-xl font-bold">Aratiri Admin</h1>
+            </div>
             <button
               onClick={logout}
               className="flex items-center text-gray-400 hover:text-white transition-colors"
@@ -85,7 +111,7 @@ export const Dashboard = ({ setIsAuthenticated, setToken }: any) => {
             />
             <StatCard
               title="Commit Hash"
-              value={nodeInfo.commitHash.substring(0, 7)}
+              value={nodeInfo.commitHash}
               icon={GitCommit}
             />
             <StatCard

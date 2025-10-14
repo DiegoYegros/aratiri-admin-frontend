@@ -35,3 +35,16 @@ body {
 .animate-spin-smooth {
   animation: spin 1.5s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
+
+@keyframes glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px rgba(250, 204, 21, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(250, 204, 21, 1));
+  }
+}
+
+.animate-glow {
+  animation: glow 3s ease-out infinite;
+}

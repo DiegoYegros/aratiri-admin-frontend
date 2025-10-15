@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { Dashboard } from "./components/dashboard/Dashboard";
+import { Sidebar } from "./components/layout/Sidebar";
 
 const decodeJwt = (token: string): { exp: number } | null => {
   try {
@@ -24,6 +25,8 @@ const decodeJwt = (token: string): { exp: number } | null => {
 export default function AdminApp() {
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("aratiri_accessToken");
@@ -50,9 +53,37 @@ export default function AdminApp() {
     };
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem("aratiri_accessToken");
+    localStorage.removeItem("aratiri_refreshToken");
+    setToken(null);
+    setIsAuthenticated(false);
+  };
+
+  const handleRefresh = useCallback(() => {
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
+    setRefreshKey((prevKey) => prevKey + 1);
+
+    // Ensure animation plays for a minimum duration
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1500);
+  }, [isRefreshing]);
+
   if (isAuthenticated) {
     return (
-      <Dashboard setToken={setToken} setIsAuthenticated={setIsAuthenticated} />
+      <div className="min-h-screen bg-gray-900 text-white font-sans flex">
+        <Sidebar
+          isRefreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          onLogout={handleLogout}
+        />
+        <div className="flex-1 flex flex-col">
+          <Dashboard refreshKey={refreshKey} />
+        </div>
+      </div>
     );
   }
 

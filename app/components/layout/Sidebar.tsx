@@ -4,11 +4,19 @@ import { LayoutDashboard, Link2, LogOut, Server } from "lucide-react";
 
 interface SidebarProps {
   isRefreshing: boolean;
+  activeView: string;
   onRefresh: () => void;
   onLogout: () => void;
+  onNavigate: (view: string) => void;
 }
 
-export const Sidebar = ({ isRefreshing, onRefresh, onLogout }: SidebarProps) => {
+export const Sidebar = ({
+  isRefreshing,
+  onRefresh,
+  onLogout,
+  activeView,
+  onNavigate,
+}: SidebarProps) => {
   return (
     <aside className="w-64 bg-gray-800 text-white flex-col hidden sm:flex border-r border-gray-700">
       <div
@@ -25,22 +33,30 @@ export const Sidebar = ({ isRefreshing, onRefresh, onLogout }: SidebarProps) => 
       <nav className="flex-grow p-4">
         <ul>
           <li>
-            <a
-              href="#"
-              className="flex items-center px-3 py-2 text-white bg-yellow-500/20 rounded-md"
+            <button
+              onClick={() => onNavigate("dashboard")}
+              className={`flex items-center w-full px-3 py-2 rounded-md ${
+                activeView === "dashboard"
+                  ? "text-white bg-yellow-500/20"
+                  : "text-gray-400 hover:bg-gray-700/50"
+              }`}
             >
               <LayoutDashboard className="w-5 h-5 mr-3 text-yellow-400" />
               <span className="font-semibold">Dashboard</span>
-            </a>
+            </button>
           </li>
           <li className="mt-2">
-            <a
-              href="#"
-              className="flex items-center px-3 py-2 text-gray-400 hover:bg-gray-700/50 rounded-md"
+            <button
+              onClick={() => onNavigate("channels")}
+              className={`flex items-center w-full px-3 py-2 rounded-md ${
+                activeView === "channels"
+                  ? "text-white bg-yellow-500/20"
+                  : "text-gray-400 hover:bg-gray-700/50"
+              }`}
             >
               <Link2 className="w-5 h-5 mr-3" />
               <span>Channels</span>
-            </a>
+            </button>
           </li>
         </ul>
       </nav>

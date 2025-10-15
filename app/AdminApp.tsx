@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import { ChannelsDashboard } from "./components/channels/ChannelsDashboard";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { Sidebar } from "./components/layout/Sidebar";
@@ -26,6 +27,7 @@ export default function AdminApp() {
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeView, setActiveView] = useState("dashboard");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -66,7 +68,6 @@ export default function AdminApp() {
     setIsRefreshing(true);
     setRefreshKey((prevKey) => prevKey + 1);
 
-    // Ensure animation plays for a minimum duration
     setTimeout(() => {
       setIsRefreshing(false);
     }, 1500);
@@ -79,9 +80,15 @@ export default function AdminApp() {
           isRefreshing={isRefreshing}
           onRefresh={handleRefresh}
           onLogout={handleLogout}
+          activeView={activeView}
+          onNavigate={setActiveView}
         />
         <div className="flex-1 flex flex-col">
-          <Dashboard refreshKey={refreshKey} />
+          {activeView === "dashboard" ? (
+            <Dashboard refreshKey={refreshKey} />
+          ) : (
+            <ChannelsDashboard />
+          )}
         </div>
       </div>
     );

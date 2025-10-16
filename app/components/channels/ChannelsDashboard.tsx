@@ -7,44 +7,43 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  Wifi,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  EyeOff,
+  Eye,
 } from "lucide-react";
 import { OpenChannelModal } from "./OpenChannelModal";
+import { StatCard } from "../ui/StatCard";
 
-interface RemoteNode {
-  pubKey: string;
-  alias: string;
-  addresses: string[];
+interface OpenChannel {
+  channelPoint: string;
+  remotePubkey: string;
   capacity: number;
-  numChannels: number;
-  betweennessCentrality: number;
+  localBalance: number;
+  remoteBalance: number;
+  active: boolean;
+  privateChannel: boolean;
 }
 
 const ITEMS_PER_PAGE = 10;
 
 export const ChannelsDashboard = () => {
-  const [remoteNodes, setRemoteNodes] = useState<RemoteNode[]>([]);
-  const [peers, setPeers] = useState<Set<string>>(new Set());
+  const [channels, setChannels] = useState<OpenChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<RemoteNode | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [connectingNode, setConnectingNode] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       setError("");
-      const [nodesData, peersData] = await Promise.all([
-        apiCall("/admin/remotes"),
-        apiCall("/admin/peers"),
-      ]);
-      setRemoteNodes(nodesData.nodes);
-      setPeers(new Set(peersData.map((p: any) => p.pub_key)));
+      const channelsData = await apiCall("/admin/channels");
+      setChannels(channelsData.channels || []);
     } catch (err: any) {
-      setError("Failed to fetch data: " + err.message);
+      setError("Failed to fetch open channels: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -54,39 +53,37 @@ export const ChannelsDashboard = () => {
     fetchData();
   }, []);
 
-  const handleOpenModal = (node: RemoteNode | null) => {
-    setSelectedNode(node);
-    setIsModalOpen(true);
+  const handleModalSuccess = () => {
+    fetchData();
   };
 
-  const handleConnect = async (node: RemoteNode) => {
-    setConnectingNode(node.pubKey);
-    setError("");
-    try {
-      const host = node.addresses[0];
-      if (!host) {
-        throw new Error("Node has no advertised address.");
-      }
-      await apiCall("/admin/connect-peer", {
-        method: "POST",
-        body: JSON.stringify({ pubkey: node.pubKey, host }),
-      });
-      setPeers((prev) => new Set(prev).add(node.pubKey));
-    } catch (err: any) {
-      setError(`Failed to connect to ${node.alias}: ${err.message}`);
-    } finally {
-      setConnectingNode(null);
-    }
-  };
-
-  const filteredNodes = useMemo(() => {
-    return remoteNodes.filter((node) =>
-      node.alias.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredChannels = useMemo(() => {
+    return channels.filter((channel) =>
+      channel.remotePubkey.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [remoteNodes, searchTerm]);
+  }, [channels, searchTerm]);
 
-  const totalPages = Math.ceil(filteredNodes.length / ITEMS_PER_PAGE);
-  const paginatedNodes = filteredNodes.slice(
+  const { totalLocal, totalRemote, activeCount, pendingCount } =
+    useMemo(() => {
+      let totalLocal = 0;
+      let totalRemote = 0;
+      let activeCount = 0;
+      let pendingCount = 0;
+
+      for (const channel of channels) {
+        if (channel.active) {
+          totalLocal += channel.localBalance;
+          totalRemote += channel.remoteBalance;
+          activeCount++;
+        } else {
+          pendingCount++;
+        }
+      }
+      return { totalLocal, totalRemote, activeCount, pendingCount };
+    }, [channels]);
+
+  const totalPages = Math.ceil(filteredChannels.length / ITEMS_PER_PAGE);
+  const paginatedChannels = filteredChannels.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -99,20 +96,20 @@ export const ChannelsDashboard = () => {
     <main className="flex-grow p-4 sm:p-8 overflow-y-auto">
       {isModalOpen && (
         <OpenChannelModal
-          node={selectedNode}
+          node={null}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={fetchData}
+          onSuccess={handleModalSuccess}
         />
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Channels</h2>
+        <h2 className="text-2xl font-bold">Your Channels</h2>
         <button
-          onClick={() => handleOpenModal(null)}
+          onClick={() => setIsModalOpen(true)}
           className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center transition"
         >
           <PlusCircle className="w-5 h-5 mr-2" />
-          Open Channel
+          Open New Channel
         </button>
       </div>
 
@@ -122,9 +119,28 @@ export const ChannelsDashboard = () => {
         </div>
       )}
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="Outbound Liquidity"
+          value={totalLocal.toLocaleString() + " sats"}
+          icon={Zap}
+        />
+        <StatCard
+          title="Inbound Liquidity"
+          value={totalRemote.toLocaleString() + " sats"}
+          icon={Zap}
+        />
+        <StatCard title="Active Channels" value={activeCount} icon={CheckCircle} />
+        <StatCard
+          title="Inactive/Pending"
+          value={pendingCount}
+          icon={AlertCircle}
+        />
+      </div>
+
       <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">Recommended Peers</h3>
+          <h3 className="text-lg font-bold">Channel List</h3>
           <div className="relative">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -132,7 +148,7 @@ export const ChannelsDashboard = () => {
             />
             <input
               type="text"
-              placeholder="Search by alias..."
+              placeholder="Search by remote pubkey..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
@@ -149,69 +165,71 @@ export const ChannelsDashboard = () => {
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-gray-700">
-                    <th className="p-2">Alias</th>
-                    <th className="p-2 hidden md:table-cell">Channels</th>
-                    <th className="p-2 hidden lg:table-cell">
-                      Capacity (sats)
-                    </th>
-                    <th className="p-2 hidden lg:table-cell">Centrality</th>
-                    <th className="p-2">Actions</th>
+                    <th className="p-2">Status</th>
+                    <th className="p-2">Remote Peer</th>
+                    <th className="p-2 hidden md:table-cell">Local Balance</th>
+                    <th className="p-2 hidden md:table-cell">Remote Balance</th>
+                    <th className="p-2 hidden lg:table-cell">Capacity</th>
+                    <th className="p-2">Type</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedNodes.map((node) => {
-                    const isPeer = peers.has(node.pubKey);
-                    return (
-                      <tr
-                        key={node.pubKey}
-                        className="hover:bg-gray-700/50 border-b border-gray-700/50"
+                  {paginatedChannels.map((channel) => (
+                    <tr
+                      key={channel.channelPoint}
+                      className="hover:bg-gray-700/50 border-b border-gray-700/50"
+                    >
+                      <td className="p-2">
+                        {channel.active ? (
+                          <CheckCircle
+                            className="text-green-500"
+                            title="Active"
+                          />
+                        ) : (
+                          <XCircle className="text-red-500" title="Inactive" />
+                        )}
+                      </td>
+                      <td
+                        className="p-2 font-mono text-sm truncate max-w-xs"
+                        title={channel.remotePubkey}
                       >
-                        <td
-                          className="p-2 font-mono text-sm truncate max-w-xs"
-                          title={node.alias}
-                        >
-                          {node.alias}
-                        </td>
-                        <td className="p-2 hidden md:table-cell">
-                          {node.numChannels}
-                        </td>
-                        <td className="p-2 hidden lg:table-cell">
-                          {node.capacity.toLocaleString()}
-                        </td>
-                        <td className="p-2 hidden lg:table-cell">
-                          {node.betweennessCentrality.toFixed(6)}
-                        </td>
-                        <td className="p-2">
-                          {isPeer ? (
-                            <button
-                              onClick={() => handleOpenModal(node)}
-                              className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition"
-                            >
-                              Open Channel
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleConnect(node)}
-                              disabled={connectingNode === node.pubKey}
-                              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition flex items-center disabled:opacity-50"
-                            >
-                              {connectingNode === node.pubKey ? (
-                                <>
-                                  <Wifi
-                                    size={16}
-                                    className="mr-1 animate-pulse"
-                                  />
-                                  Connecting...
-                                </>
-                              ) : (
-                                "Connect"
-                              )}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        {channel.remotePubkey.substring(0, 10)}...
+                        {channel.remotePubkey.substring(
+                          channel.remotePubkey.length - 4
+                        )}
+                      </td>
+                      <td className="p-2 hidden md:table-cell">
+                        {channel.localBalance.toLocaleString()} sats
+                      </td>
+                      <td className="p-2 hidden md:table-cell">
+                        {channel.remoteBalance.toLocaleString()} sats
+                      </td>
+                      <td className="p-2 hidden lg:table-cell">
+                        {channel.capacity.toLocaleString()} sats
+                      </td>
+                      <td className="p-2 text-xs text-gray-400">
+                        {channel.privateChannel ? (
+                          <span title="Private">
+                            <EyeOff size={16} />
+                          </span>
+                        ) : (
+                          <span title="Public">
+                            <Eye size={16} />
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {channels.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center text-gray-500 p-8"
+                      >
+                        You have no open channels.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

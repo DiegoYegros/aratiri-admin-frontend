@@ -4,6 +4,7 @@ import { ChannelsDashboard } from "./components/channels/ChannelsDashboard";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { Sidebar } from "./components/layout/Sidebar";
+import { PeersDashboard } from "./components/peers/PeersDashboard";
 
 const decodeJwt = (token: string): { exp: number } | null => {
   try {
@@ -73,6 +74,19 @@ export default function AdminApp() {
     }, 1500);
   }, [isRefreshing]);
 
+  const renderActiveView = () => {
+    switch (activeView) {
+      case "dashboard":
+        return <Dashboard refreshKey={refreshKey} />;
+      case "channels":
+        return <ChannelsDashboard />;
+      case "peers":
+        return <PeersDashboard />;
+      default:
+        return <Dashboard refreshKey={refreshKey} />;
+    }
+  };
+
   if (isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-900 text-white font-sans flex">
@@ -84,11 +98,7 @@ export default function AdminApp() {
           onNavigate={setActiveView}
         />
         <div className="flex-1 flex flex-col">
-          {activeView === "dashboard" ? (
-            <Dashboard refreshKey={refreshKey} />
-          ) : (
-            <ChannelsDashboard />
-          )}
+          {renderActiveView()}
         </div>
       </div>
     );

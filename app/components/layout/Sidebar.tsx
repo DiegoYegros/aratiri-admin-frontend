@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Link2, LogOut, Server } from "lucide-react";
+import { LayoutDashboard, Link2, LogOut, Server, Users } from "lucide-react";
 
 interface SidebarProps {
   isRefreshing: boolean;
@@ -56,6 +56,19 @@ export const Sidebar = ({
             >
               <Link2 className="w-5 h-5 mr-3" />
               <span>Channels</span>
+            </button>
+          </li>
+          <li className="mt-2">
+            <button
+              onClick={() => onNavigate("peers")}
+              className={`flex items-center w-full px-3 py-2 rounded-md ${
+                activeView === "peers"
+                  ? "text-white bg-yellow-500/20"
+                  : "text-gray-400 hover:bg-gray-700/50"
+              }`}
+            >
+              <Users className="w-5 h-5 mr-3" />
+              <span>Peers</span>
             </button>
           </li>
         </ul>

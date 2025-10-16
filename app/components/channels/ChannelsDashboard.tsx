@@ -112,7 +112,7 @@ export const ChannelsDashboard = () => {
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Your Channels</h2>
+        <h2 className="text-2xl font-bold">Channels</h2>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg flex items-center transition"

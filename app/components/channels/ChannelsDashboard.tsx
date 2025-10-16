@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { OpenChannelModal } from "./OpenChannelModal";
 import { StatCard } from "../ui/StatCard";
+import { CopyableCell } from "../ui/CopyableCell";
 
 interface OpenChannel {
   channelPoint: string;
@@ -37,7 +38,7 @@ export const ChannelsDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [copiedPubkey, setCopiedPubkey] = useState<string | null>(null);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -62,8 +63,8 @@ export const ChannelsDashboard = () => {
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedPubkey(text);
-    setTimeout(() => setCopiedPubkey(null), 2000);
+    setCopiedText(text);
+    setTimeout(() => setCopiedText(null), 2000);
   };
 
   const filteredChannels = useMemo(() => {
@@ -209,35 +210,45 @@ export const ChannelsDashboard = () => {
                         className="p-2 font-mono text-sm truncate max-w-xs group relative"
                         title={channel.remotePubkey}
                       >
-                        <span>
-                          {channel.remotePubkey.substring(0, 10)}...
-                          {channel.remotePubkey.substring(
-                            channel.remotePubkey.length - 4
-                          )}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCopy(channel.remotePubkey);
-                          }}
-                          className="absolute top-1/2 right-2 -translate-y-1/2 p-1 bg-gray-700 rounded-md text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Copy full pubkey"
+                        <CopyableCell
+                          fullText={channel.remotePubkey}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
                         >
-                          {copiedPubkey === channel.remotePubkey ? (
-                            <Check size={14} className="text-green-500" />
-                          ) : (
-                            <ClipboardCopy size={14} />
-                          )}
-                        </button>
+                          <span>
+                            {channel.remotePubkey.substring(0, 10)}...
+                            {channel.remotePubkey.substring(
+                              channel.remotePubkey.length - 4
+                            )}
+                          </span>
+                        </CopyableCell>
                       </td>
-                      <td className="p-2 hidden md:table-cell">
-                        {channel.localBalance.toLocaleString()} sats
+                      <td className="p-2 hidden md:table-cell group relative">
+                        <CopyableCell
+                          fullText={channel.localBalance.toLocaleString()}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {channel.localBalance.toLocaleString()} sats
+                        </CopyableCell>
                       </td>
-                      <td className="p-2 hidden md:table-cell">
-                        {channel.remoteBalance.toLocaleString()} sats
+                      <td className="p-2 hidden md:table-cell group relative">
+                        <CopyableCell
+                          fullText={channel.remoteBalance.toLocaleString()}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {channel.remoteBalance.toLocaleString()} sats
+                        </CopyableCell>
                       </td>
-                      <td className="p-2 hidden lg:table-cell">
-                        {channel.capacity.toLocaleString()} sats
+                      <td className="p-2 hidden lg:table-cell group relative">
+                        <CopyableCell
+                          fullText={channel.capacity.toLocaleString()}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {channel.capacity.toLocaleString()} sats
+                        </CopyableCell>
                       </td>
                       <td className="p-2 text-xs text-gray-400">
                         {channel.privateChannel ? (

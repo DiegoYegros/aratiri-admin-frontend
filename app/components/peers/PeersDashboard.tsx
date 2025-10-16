@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { OpenChannelModal } from "../channels/OpenChannelModal";
+import { CopyableCell } from "../ui/CopyableCell";
 
 interface RemoteNode {
   pubKey: string;
@@ -38,6 +39,7 @@ export const PeersDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [connectingNode, setConnectingNode] = useState<string | null>(null);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -47,12 +49,17 @@ export const PeersDashboard = () => {
         apiCall("/admin/remotes"),
         apiCall("/admin/peers"),
       ]);
-      
-      const connectedPubkeys = new Set((peersData || []).map((p: Peer) => p.pubKey));
-      
+
+      const connectedPubkeys = new Set(
+        (peersData || []).map((p: Peer) => p.pubKey)
+      );
+
       setConnectedPeers(peersData || []);
-      setRecommendedNodes((nodesData.nodes || []).filter((node: RemoteNode) => !connectedPubkeys.has(node.pubKey)));
-      
+      setRecommendedNodes(
+        (nodesData.nodes || []).filter(
+          (node: RemoteNode) => !connectedPubkeys.has(node.pubKey)
+        )
+      );
     } catch (err: any) {
       setError("Failed to fetch data: " + err.message);
     } finally {
@@ -67,6 +74,12 @@ export const PeersDashboard = () => {
   const handleOpenModal = (node: RemoteNode | null) => {
     setSelectedNode(node);
     setIsModalOpen(true);
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(text);
+    setTimeout(() => setCopiedText(null), 2000);
   };
 
   const handleConnect = async (node: RemoteNode) => {
@@ -159,27 +172,43 @@ export const PeersDashboard = () => {
                     className="hover:bg-gray-700/50 border-b border-gray-700/50"
                   >
                     <td
-                      className="p-2 font-mono text-sm truncate max-w-xs"
+                      className="p-2 font-mono text-sm truncate max-w-xs group relative"
                       title={peer.address || "N/A"}
                     >
-                      {peer.address || "N/A"}
+                      <CopyableCell
+                        fullText={peer.address || "N/A"}
+                        copiedText={copiedText}
+                        onCopy={handleCopy}
+                      >
+                        {peer.address || "N/A"}
+                      </CopyableCell>
                     </td>
                     <td
-                      className="p-2 font-mono text-sm truncate max-w-xs"
+                      className="p-2 font-mono text-sm truncate max-w-xs group relative"
                       title={peer.pubKey || "N/A"}
                     >
-                      {peer.pubKey ? `${peer.pubKey.substring(0, 10)}...` : "N/A"}
+                      <CopyableCell
+                        fullText={peer.pubKey || "N/A"}
+                        copiedText={copiedText}
+                        onCopy={handleCopy}
+                      >
+                        {peer.pubKey
+                          ? `${peer.pubKey.substring(0, 10)}...`
+                          : "N/A"}
+                      </CopyableCell>
                     </td>
                     <td className="p-2">
                       <button
-                        onClick={() => handleOpenModal({ 
-                          pubKey: peer.pubKey, 
-                          alias: peer.address, 
-                          addresses: [], 
-                          capacity: 0, 
-                          numChannels: 0, 
-                          betweennessCentrality: 0 
-                        })}
+                        onClick={() =>
+                          handleOpenModal({
+                            pubKey: peer.pubKey,
+                            alias: peer.address,
+                            addresses: [],
+                            capacity: 0,
+                            numChannels: 0,
+                            betweennessCentrality: 0,
+                          })
+                        }
                         disabled={!peer.pubKey}
                         className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition disabled:opacity-50"
                       >
@@ -189,14 +218,14 @@ export const PeersDashboard = () => {
                   </tr>
                 ))}
                 {connectedPeers.length === 0 && (
-                   <tr>
-                      <td
-                        colSpan={3}
-                        className="text-center text-gray-500 p-6"
-                      >
-                        You are not connected to any peers.
-                      </td>
-                    </tr>
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="text-center text-gray-500 p-6"
+                    >
+                      You are not connected to any peers.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
@@ -247,19 +276,43 @@ export const PeersDashboard = () => {
                       className="hover:bg-gray-700/50 border-b border-gray-700/50"
                     >
                       <td
-                        className="p-2 font-mono text-sm truncate max-w-xs"
+                        className="p-2 font-mono text-sm truncate max-w-xs group relative"
                         title={node.alias}
                       >
-                        {node.alias}
+                        <CopyableCell
+                          fullText={node.alias}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {node.alias}
+                        </CopyableCell>
                       </td>
-                      <td className="p-2 hidden md:table-cell">
-                        {node.numChannels}
+                      <td className="p-2 hidden md:table-cell group relative">
+                        <CopyableCell
+                          fullText={String(node.numChannels)}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {node.numChannels}
+                        </CopyableCell>
                       </td>
-                      <td className="p-2 hidden lg:table-cell">
-                        {node.capacity.toLocaleString()}
+                      <td className="p-2 hidden lg:table-cell group relative">
+                        <CopyableCell
+                          fullText={node.capacity.toLocaleString()}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {node.capacity.toLocaleString()}
+                        </CopyableCell>
                       </td>
-                      <td className="p-2 hidden lg:table-cell">
-                        {node.betweennessCentrality.toFixed(6)}
+                      <td className="p-2 hidden lg:table-cell group relative">
+                        <CopyableCell
+                          fullText={node.betweennessCentrality.toFixed(6)}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {node.betweennessCentrality.toFixed(6)}
+                        </CopyableCell>
                       </td>
                       <td className="p-2">
                         <button
@@ -282,8 +335,8 @@ export const PeersDashboard = () => {
                       </td>
                     </tr>
                   ))}
-                   {paginatedRecommendedNodes.length === 0 && (
-                   <tr>
+                  {paginatedRecommendedNodes.length === 0 && (
+                    <tr>
                       <td
                         colSpan={5}
                         className="text-center text-gray-500 p-8"
@@ -291,7 +344,7 @@ export const PeersDashboard = () => {
                         No recommended peers found.
                       </td>
                     </tr>
-                )}
+                  )}
                 </tbody>
               </table>
             </div>

@@ -10,8 +10,10 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  EyeOff,
-  Eye,
+  Lock,
+  Globe,
+  ClipboardCopy,
+  Check,
 } from "lucide-react";
 import { OpenChannelModal } from "./OpenChannelModal";
 import { StatCard } from "../ui/StatCard";
@@ -35,6 +37,7 @@ export const ChannelsDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [copiedPubkey, setCopiedPubkey] = useState<string | null>(null);
 
   const fetchData = async () => {
     try {
@@ -55,6 +58,12 @@ export const ChannelsDashboard = () => {
 
   const handleModalSuccess = () => {
     fetchData();
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPubkey(text);
+    setTimeout(() => setCopiedPubkey(null), 2000);
   };
 
   const filteredChannels = useMemo(() => {
@@ -122,12 +131,14 @@ export const ChannelsDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         <StatCard
           title="Outbound Liquidity"
-          value={totalLocal.toLocaleString() + " sats"}
+          value={totalLocal.toLocaleString()}
+          unit="sats"
           icon={Zap}
         />
         <StatCard
           title="Inbound Liquidity"
-          value={totalRemote.toLocaleString() + " sats"}
+          value={totalRemote.toLocaleString()}
+          unit="sats"
           icon={Zap}
         />
         <StatCard title="Active Channels" value={activeCount} icon={CheckCircle} />
@@ -181,22 +192,43 @@ export const ChannelsDashboard = () => {
                     >
                       <td className="p-2">
                         {channel.active ? (
-                          <CheckCircle
-                            className="text-green-500"
-                            title="Active"
-                          />
+                          <span title="Channel is Active">
+                            <CheckCircle
+                              className="text-green-500"
+                            />
+                          </span>
                         ) : (
-                          <XCircle className="text-red-500" title="Inactive" />
+                          <span title="Channel is Inactive">
+                            <XCircle
+                              className="text-red-500"
+                            />
+                          </span>
                         )}
                       </td>
                       <td
-                        className="p-2 font-mono text-sm truncate max-w-xs"
+                        className="p-2 font-mono text-sm truncate max-w-xs group relative"
                         title={channel.remotePubkey}
                       >
-                        {channel.remotePubkey.substring(0, 10)}...
-                        {channel.remotePubkey.substring(
-                          channel.remotePubkey.length - 4
-                        )}
+                        <span>
+                          {channel.remotePubkey.substring(0, 10)}...
+                          {channel.remotePubkey.substring(
+                            channel.remotePubkey.length - 4
+                          )}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopy(channel.remotePubkey);
+                          }}
+                          className="absolute top-1/2 right-2 -translate-y-1/2 p-1 bg-gray-700 rounded-md text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Copy full pubkey"
+                        >
+                          {copiedPubkey === channel.remotePubkey ? (
+                            <Check size={14} className="text-green-500" />
+                          ) : (
+                            <ClipboardCopy size={14} />
+                          )}
+                        </button>
                       </td>
                       <td className="p-2 hidden md:table-cell">
                         {channel.localBalance.toLocaleString()} sats
@@ -209,12 +241,12 @@ export const ChannelsDashboard = () => {
                       </td>
                       <td className="p-2 text-xs text-gray-400">
                         {channel.privateChannel ? (
-                          <span title="Private">
-                            <EyeOff size={16} />
+                          <span title="Private Channel">
+                            <Lock size={16} />
                           </span>
                         ) : (
-                          <span title="Public">
-                            <Eye size={16} />
+                          <span title="Public Channel">
+                            <Globe size={16} />
                           </span>
                         )}
                       </td>

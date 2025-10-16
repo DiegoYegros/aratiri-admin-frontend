@@ -41,7 +41,11 @@ export const Sidebar = ({
                   : "text-gray-400 hover:bg-gray-700/50"
               }`}
             >
-              <LayoutDashboard className="w-5 h-5 mr-3 text-yellow-400" />
+              <LayoutDashboard
+                className={`w-5 h-5 mr-3 ${
+                  activeView === "dashboard" ? "text-yellow-400" : ""
+                }`}
+              />
               <span className="font-semibold">Dashboard</span>
             </button>
           </li>
@@ -54,7 +58,11 @@ export const Sidebar = ({
                   : "text-gray-400 hover:bg-gray-700/50"
               }`}
             >
-              <Link2 className="w-5 h-5 mr-3" />
+              <Link2
+                className={`w-5 h-5 mr-3 ${
+                  activeView === "channels" ? "text-yellow-400" : ""
+                }`}
+              />
               <span>Channels</span>
             </button>
           </li>
@@ -67,7 +75,11 @@ export const Sidebar = ({
                   : "text-gray-400 hover:bg-gray-700/50"
               }`}
             >
-              <Users className="w-5 h-5 mr-3" />
+              <Users
+                className={`w-5 h-5 mr-3 ${
+                  activeView === "peers" ? "text-yellow-400" : ""
+                }`}
+              />
               <span>Peers</span>
             </button>
           </li>

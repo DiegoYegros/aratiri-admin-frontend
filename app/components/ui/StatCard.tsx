@@ -7,15 +7,16 @@ interface StatCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
+  unit?: string;
 }
 
-export const StatCard = ({ title, value, icon: Icon }: StatCardProps) => {
+export const StatCard = ({ title, value, icon: Icon, unit }: StatCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const isString = typeof value === "string";
+  const displayValue = String(value);
   const TRUNCATE_LENGTH = 10;
-  const isLong = isString && value.length > TRUNCATE_LENGTH;
+  const isLong = displayValue.length > TRUNCATE_LENGTH;
 
   const toggleExpansion = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -26,7 +27,8 @@ export const StatCard = ({ title, value, icon: Icon }: StatCardProps) => {
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(String(value));
+    const textToCopy = unit ? `${displayValue} ${unit}` : displayValue;
+    navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -40,7 +42,7 @@ export const StatCard = ({ title, value, icon: Icon }: StatCardProps) => {
         <p className="text-sm text-gray-400">{title}</p>
         {isLong && !isExpanded ? (
           <p className="text-xl font-bold">
-            <span>{value.substring(0, 7)}</span>
+            <span>{displayValue.substring(0, 7)}</span>
             <button
               onClick={toggleExpansion}
               className="text-yellow-400 hover:text-yellow-300 ml-1"
@@ -48,6 +50,7 @@ export const StatCard = ({ title, value, icon: Icon }: StatCardProps) => {
             >
               ...
             </button>
+            {unit && <span className="text-lg ml-1 text-gray-400">{unit}</span>}
           </p>
         ) : (
           <p
@@ -57,7 +60,8 @@ export const StatCard = ({ title, value, icon: Icon }: StatCardProps) => {
             onClick={isLong ? toggleExpansion : undefined}
             title={isLong ? "Click to collapse" : ""}
           >
-            {value}
+            {displayValue}
+            {unit && <span className="text-lg ml-1 text-gray-400">{unit}</span>}
           </p>
         )}
       </div>

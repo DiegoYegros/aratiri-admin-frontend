@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Search,
   Wifi,
+  Users,
 } from "lucide-react";
 import { OpenChannelModal } from "../channels/OpenChannelModal";
 
@@ -20,11 +21,16 @@ interface RemoteNode {
   betweennessCentrality: number;
 }
 
+interface Peer {
+  pubKey: string;
+  address: string;
+}
+
 const ITEMS_PER_PAGE = 10;
 
 export const PeersDashboard = () => {
-  const [remoteNodes, setRemoteNodes] = useState<RemoteNode[]>([]);
-  const [peers, setPeers] = useState<Set<string>>(new Set());
+  const [recommendedNodes, setRecommendedNodes] = useState<RemoteNode[]>([]);
+  const [connectedPeers, setConnectedPeers] = useState<Peer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,8 +47,12 @@ export const PeersDashboard = () => {
         apiCall("/admin/remotes"),
         apiCall("/admin/peers"),
       ]);
-      setRemoteNodes(nodesData.nodes);
-      setPeers(new Set(peersData.map((p: any) => p.pub_key)));
+      
+      const connectedPubkeys = new Set((peersData || []).map((p: Peer) => p.pubKey));
+      
+      setConnectedPeers(peersData || []);
+      setRecommendedNodes((nodesData.nodes || []).filter((node: RemoteNode) => !connectedPubkeys.has(node.pubKey)));
+      
     } catch (err: any) {
       setError("Failed to fetch data: " + err.message);
     } finally {
@@ -71,7 +81,7 @@ export const PeersDashboard = () => {
         method: "POST",
         body: JSON.stringify({ pubkey: node.pubKey, host }),
       });
-      setPeers((prev) => new Set(prev).add(node.pubKey));
+      fetchData();
     } catch (err: any) {
       setError(`Failed to connect to ${node.alias}: ${err.message}`);
     } finally {
@@ -79,14 +89,15 @@ export const PeersDashboard = () => {
     }
   };
 
-  const filteredNodes = useMemo(() => {
-    return remoteNodes.filter((node) =>
-      node.alias.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRecommendedNodes = useMemo(() => {
+    if (!recommendedNodes) return [];
+    return recommendedNodes.filter((node) =>
+      (node.alias || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [remoteNodes, searchTerm]);
+  }, [recommendedNodes, searchTerm]);
 
-  const totalPages = Math.ceil(filteredNodes.length / ITEMS_PER_PAGE);
-  const paginatedNodes = filteredNodes.slice(
+  const totalPages = Math.ceil(filteredRecommendedNodes.length / ITEMS_PER_PAGE);
+  const paginatedRecommendedNodes = filteredRecommendedNodes.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -123,6 +134,77 @@ export const PeersDashboard = () => {
       )}
 
       <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+        <h3 className="text-lg font-bold mb-4 flex items-center">
+          <Users className="w-5 h-5 mr-2 text-yellow-400" />
+          Connected Peers ({connectedPeers.length})
+        </h3>
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <Zap className="w-8 h-8 text-yellow-400 animate-spin" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto max-h-64">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="p-2">Address</th>
+                  <th className="p-2">Pubkey</th>
+                  <th className="p-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {connectedPeers.map((peer) => (
+                  <tr
+                    key={peer.pubKey || Math.random()}
+                    className="hover:bg-gray-700/50 border-b border-gray-700/50"
+                  >
+                    <td
+                      className="p-2 font-mono text-sm truncate max-w-xs"
+                      title={peer.address || "N/A"}
+                    >
+                      {peer.address || "N/A"}
+                    </td>
+                    <td
+                      className="p-2 font-mono text-sm truncate max-w-xs"
+                      title={peer.pubKey || "N/A"}
+                    >
+                      {peer.pubKey ? `${peer.pubKey.substring(0, 10)}...` : "N/A"}
+                    </td>
+                    <td className="p-2">
+                      <button
+                        onClick={() => handleOpenModal({ 
+                          pubKey: peer.pubKey, 
+                          alias: peer.address, 
+                          addresses: [], 
+                          capacity: 0, 
+                          numChannels: 0, 
+                          betweennessCentrality: 0 
+                        })}
+                        disabled={!peer.pubKey}
+                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition disabled:opacity-50"
+                      >
+                        Open Channel
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {connectedPeers.length === 0 && (
+                   <tr>
+                      <td
+                        colSpan={3}
+                        className="text-center text-gray-500 p-6"
+                      >
+                        You are not connected to any peers.
+                      </td>
+                    </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 mt-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold">Recommended Peers</h3>
           <div className="relative">
@@ -159,59 +241,57 @@ export const PeersDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedNodes.map((node) => {
-                    const isPeer = peers.has(node.pubKey);
-                    return (
-                      <tr
-                        key={node.pubKey}
-                        className="hover:bg-gray-700/50 border-b border-gray-700/50"
+                  {paginatedRecommendedNodes.map((node) => (
+                    <tr
+                      key={node.pubKey}
+                      className="hover:bg-gray-700/50 border-b border-gray-700/50"
+                    >
+                      <td
+                        className="p-2 font-mono text-sm truncate max-w-xs"
+                        title={node.alias}
                       >
-                        <td
-                          className="p-2 font-mono text-sm truncate max-w-xs"
-                          title={node.alias}
+                        {node.alias}
+                      </td>
+                      <td className="p-2 hidden md:table-cell">
+                        {node.numChannels}
+                      </td>
+                      <td className="p-2 hidden lg:table-cell">
+                        {node.capacity.toLocaleString()}
+                      </td>
+                      <td className="p-2 hidden lg:table-cell">
+                        {node.betweennessCentrality.toFixed(6)}
+                      </td>
+                      <td className="p-2">
+                        <button
+                          onClick={() => handleConnect(node)}
+                          disabled={connectingNode === node.pubKey}
+                          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition flex items-center disabled:opacity-50"
                         >
-                          {node.alias}
-                        </td>
-                        <td className="p-2 hidden md:table-cell">
-                          {node.numChannels}
-                        </td>
-                        <td className="p-2 hidden lg:table-cell">
-                          {node.capacity.toLocaleString()}
-                        </td>
-                        <td className="p-2 hidden lg:table-cell">
-                          {node.betweennessCentrality.toFixed(6)}
-                        </td>
-                        <td className="p-2">
-                          {isPeer ? (
-                            <button
-                              onClick={() => handleOpenModal(node)}
-                              className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition"
-                            >
-                              Open Channel
-                            </button>
+                          {connectingNode === node.pubKey ? (
+                            <>
+                              <Wifi
+                                size={16}
+                                className="mr-1 animate-pulse"
+                              />
+                              Connecting...
+                            </>
                           ) : (
-                            <button
-                              onClick={() => handleConnect(node)}
-                              disabled={connectingNode === node.pubKey}
-                              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition flex items-center disabled:opacity-50"
-                            >
-                              {connectingNode === node.pubKey ? (
-                                <>
-                                  <Wifi
-                                    size={16}
-                                    className="mr-1 animate-pulse"
-                                  />
-                                  Connecting...
-                                </>
-                              ) : (
-                                "Connect"
-                              )}
-                            </button>
+                            "Connect"
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                   {paginatedRecommendedNodes.length === 0 && (
+                   <tr>
+                      <td
+                        colSpan={5}
+                        className="text-center text-gray-500 p-8"
+                      >
+                        No recommended peers found.
+                      </td>
+                    </tr>
+                )}
                 </tbody>
               </table>
             </div>

@@ -19,20 +19,29 @@ import { OpenChannelModal } from "./OpenChannelModal";
 import { StatCard } from "../ui/StatCard";
 import { CopyableCell } from "../ui/CopyableCell";
 
-interface OpenChannel {
+type ChannelStatusType =
+  | "active"
+  | "inactive"
+  | "pending_open"
+  | "pending_closing"
+  | "pending_force_closing"
+  | "waiting_close";
+
+interface UnifiedChannel {
   channelPoint: string;
   remotePubkey: string;
   capacity: number;
   localBalance: number;
   remoteBalance: number;
-  active: boolean;
+  active: boolean; 
   privateChannel: boolean;
+  status: ChannelStatusType;
 }
 
 const ITEMS_PER_PAGE = 10;
 
 export const ChannelsDashboard = () => {
-  const [channels, setChannels] = useState<OpenChannel[]>([]);
+  const [channels, setChannels] = useState<UnifiedChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,12 +49,127 @@ export const ChannelsDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
+  const ChannelStatus = ({ status }: { status: UnifiedChannel["status"] }) => {
+    switch (status) {
+      case "active":
+        return (
+          <span
+            title="Channel is Active"
+            className="flex items-center text-green-500"
+          >
+            <CheckCircle size={16} className="mr-1" />
+            Active
+          </span>
+        );
+      case "inactive":
+        return (
+          <span
+            title="Channel is Inactive"
+            className="flex items-center text-red-500"
+          >
+            <XCircle size={16} className="mr-1" />
+            Inactive
+          </span>
+        );
+      case "pending_open":
+        return (
+          <span
+            title="Channel is Pending Open"
+            className="flex items-center text-yellow-500"
+          >
+            <AlertCircle size={16} className="mr-1" />
+            Pending Open
+          </span>
+        );
+      case "pending_closing":
+        return (
+          <span
+            title="Channel is Pending Close"
+            className="flex items-center text-gray-400"
+          >
+            <AlertCircle size={16} className="mr-1" />
+            Pending Close
+          </span>
+        );
+      case "pending_force_closing":
+        return (
+          <span
+            title="Channel is Pending Force Close"
+            className="flex items-center text-gray-400"
+          >
+            <AlertCircle size={16} className="mr-1" />
+            Force Closing
+          </span>
+        );
+      case "waiting_close":
+        return (
+          <span
+            title="Channel is Waiting to Close"
+            className="flex items-center text-gray-400"
+          >
+            <AlertCircle size={16} className="mr-1" />
+            Waiting Close
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
       setError("");
       const channelsData = await apiCall("/admin/channels");
-      setChannels(channelsData.channels || []);
+
+      const openChannels: UnifiedChannel[] = (
+        channelsData.openChannels || []
+      ).map((c: any) => ({
+        ...c,
+        status: c.active ? "active" : "inactive",
+      }));
+
+      const processPending = (
+        pendingList: any[],
+        status: UnifiedChannel["status"]
+      ): UnifiedChannel[] => {
+        if (!pendingList) return [];
+        return pendingList.map((p: any) => ({
+          channelPoint: p.channel?.channelPoint || "N/A",
+          remotePubkey: p.channel?.remoteNodePub || "N/A",
+          capacity: p.channel?.capacity || 0,
+          localBalance: p.channel?.localBalance || 0,
+          remoteBalance: p.channel?.remoteBalance || 0,
+          active: false,
+          privateChannel: p.channel?.privateChannel || false,
+          status: status,
+        }));
+      };
+
+      const pendingOpen = processPending(
+        channelsData.pendingChannels?.pendingOpenChannels,
+        "pending_open"
+      );
+      const pendingClosing = processPending(
+        channelsData.pendingChannels?.pendingClosingChannels,
+        "pending_closing"
+      );
+      const pendingForceClosing = processPending(
+        channelsData.pendingChannels?.pendingForceClosingChannels,
+        "pending_force_closing"
+      );
+      const waitingClose = processPending(
+        channelsData.pendingChannels?.waitingCloseChannels,
+        "waiting_close"
+      );
+
+      setChannels([
+        ...openChannels,
+        ...pendingOpen,
+        ...pendingClosing,
+        ...pendingForceClosing,
+        ...waitingClose,
+      ]);
     } catch (err: any) {
       setError("Failed to fetch open channels: " + err.message);
     } finally {
@@ -81,7 +205,7 @@ export const ChannelsDashboard = () => {
       let pendingCount = 0;
 
       for (const channel of channels) {
-        if (channel.active) {
+        if (channel.status === "active") {
           totalLocal += channel.localBalance;
           totalRemote += channel.remoteBalance;
           activeCount++;
@@ -192,19 +316,7 @@ export const ChannelsDashboard = () => {
                       className="hover:bg-gray-700/50 border-b border-gray-700/50"
                     >
                       <td className="p-2">
-                        {channel.active ? (
-                          <span title="Channel is Active">
-                            <CheckCircle
-                              className="text-green-500"
-                            />
-                          </span>
-                        ) : (
-                          <span title="Channel is Inactive">
-                            <XCircle
-                              className="text-red-500"
-                            />
-                          </span>
-                        )}
+                        <ChannelStatus status={channel.status} />
                       </td>
                       <td
                         className="p-2 font-mono text-sm truncate max-w-xs group relative"
@@ -216,10 +328,14 @@ export const ChannelsDashboard = () => {
                           onCopy={handleCopy}
                         >
                           <span>
-                            {channel.remotePubkey.substring(0, 10)}...
-                            {channel.remotePubkey.substring(
-                              channel.remotePubkey.length - 4
-                            )}
+                            {channel.remotePubkey === "N/A"
+                              ? "N/A"
+                              : `${channel.remotePubkey.substring(
+                                  0,
+                                  10
+                                )}...${channel.remotePubkey.substring(
+                                  channel.remotePubkey.length - 4
+                                )}`}
                           </span>
                         </CopyableCell>
                       </td>

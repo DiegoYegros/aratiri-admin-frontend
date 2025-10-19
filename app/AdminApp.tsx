@@ -30,6 +30,7 @@ export default function AdminApp() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeView, setActiveView] = useState("dashboard");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("aratiri_accessToken");
@@ -74,6 +75,10 @@ export default function AdminApp() {
     }, 1500);
   }, [isRefreshing]);
 
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   const renderActiveView = () => {
     switch (activeView) {
       case "dashboard":
@@ -96,8 +101,10 @@ export default function AdminApp() {
           onLogout={handleLogout}
           activeView={activeView}
           onNavigate={setActiveView}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
         />
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col h-screen overflow-y-auto">
           {renderActiveView()}
         </div>
       </div>

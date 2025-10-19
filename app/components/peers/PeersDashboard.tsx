@@ -10,9 +10,12 @@ import {
   Users,
   Settings,
   Loader2,
+  PlusCircle,
+  Star,
 } from "lucide-react";
 import { OpenChannelModal } from "../channels/OpenChannelModal";
 import { CopyableCell } from "../ui/CopyableCell";
+import { StatCard } from "../ui/StatCard";
 
 interface RemoteNode {
     pubKey: string;
@@ -148,6 +151,15 @@ export const PeersDashboard = () => {
     );
   }, [recommendedNodes, searchTerm]);
 
+  const totalRecommendedCapacity = useMemo(
+    () =>
+      recommendedNodes.reduce(
+        (sum, node) => sum + (node.capacity || 0),
+        0
+      ),
+    [recommendedNodes]
+  );
+
   const totalPages = Math.ceil(filteredRecommendedNodes.length / ITEMS_PER_PAGE);
   const paginatedRecommendedNodes = filteredRecommendedNodes.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -169,296 +181,382 @@ export const PeersDashboard = () => {
         />
       )}
 
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">Peers</h2>
+      <div className="mb-8 rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-900/90 via-gray-900 to-gray-800 px-6 py-6 shadow-lg">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-3xl font-semibold tracking-tight">Peers</h2>
+            <p className="mt-1 text-sm text-gray-400">
+              Keep your node well connected with curated peer recommendations.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => fetchData()}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow hover:bg-gray-800 transition focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Zap
+                className={`h-4 w-4 ${loading ? "animate-spin text-yellow-300" : "text-yellow-400"}`}
+              />
+              Refresh
+            </button>
+            <button
+              onClick={() => handleOpenModal(null)}
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 via-indigo-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:from-blue-400 hover:to-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
+            >
+              <PlusCircle className="h-5 w-5" />
+              Open Channel
+            </button>
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Connected Peers"
+            value={connectedPeers.length}
+            icon={Users}
+          />
+          <StatCard
+            title="Recommended Nodes"
+            value={recommendedNodes.length}
+            icon={Star}
+          />
+          <StatCard
+            title="Auto-Manage Peers"
+            value={isAutoManageEnabled ? "Enabled" : "Disabled"}
+            icon={Settings}
+          />
+          <StatCard
+            title="Recommended Capacity"
+            value={totalRecommendedCapacity.toLocaleString()}
+            unit="sats"
+            icon={Wifi}
+          />
+        </div>
       </div>
 
-       {/* --- Settings Section --- */}
-       <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 mb-8">
-          <h3 className="text-lg font-bold mb-3 flex items-center">
-            <Settings className="w-5 h-5 mr-2 text-yellow-400" />
-            Peer Management Settings
-          </h3>
-          {settingsLoading ? (
-             <div className="flex items-center text-gray-400">
-               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-               Loading settings...
-             </div>
-          ) : (
-            <div>
-              {settingsError && (
-                 <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-md mb-3 text-sm">
-                   {settingsError}
-                 </div>
-               )}
-              <div className="flex items-center space-x-3">
-                 <label htmlFor="autoManageToggle" className="flex items-center cursor-pointer">
-                    <div className="relative">
-                      <input
-                        id="autoManageToggle"
-                        type="checkbox"
-                        className="sr-only"
-                        checked={isAutoManageEnabled}
-                        onChange={handleToggleAutoManage}
-                        disabled={updatingSettings}
-                      />
-                      <div className={`block w-10 h-6 rounded-full transition ${isAutoManageEnabled ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-                      <div className={`dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${isAutoManageEnabled ? 'translate-x-4' : ''}`}></div>
-                   </div>
-                   <div className="ml-3 text-gray-300">
-                     Automatically maintain connections with top peers
-                   </div>
-                 </label>
-                 {updatingSettings && <Loader2 className="w-4 h-4 text-yellow-400 animate-spin" />}
+      {/* --- Settings Section --- */}
+      <div className="mb-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
+        <h3 className="mb-3 flex items-center text-lg font-bold">
+          <Settings className="mr-2 h-5 w-5 text-blue-400" />
+          Peer Management Settings
+        </h3>
+        {settingsLoading ? (
+          <div className="flex items-center text-gray-400">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Loading settings...
+          </div>
+        ) : (
+          <div>
+            {settingsError && (
+              <div className="mb-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+                {settingsError}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                  When enabled, Aratiri will periodically connect to recommended peers based on network centrality if not already connected, up to a configured limit.
-              </p>
+            )}
+            <div className="flex items-center space-x-3">
+              <label
+                htmlFor="autoManageToggle"
+                className="flex cursor-pointer items-center"
+              >
+                <div className="relative">
+                  <input
+                    id="autoManageToggle"
+                    type="checkbox"
+                    className="sr-only"
+                    checked={isAutoManageEnabled}
+                    onChange={handleToggleAutoManage}
+                    disabled={updatingSettings}
+                  />
+                  <div
+                    className={`block h-6 w-10 rounded-full transition ${
+                      isAutoManageEnabled ? "bg-emerald-500" : "bg-gray-600"
+                    }`}
+                  ></div>
+                  <div
+                    className={`dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                      isAutoManageEnabled ? "translate-x-4" : ""
+                    }`}
+                  ></div>
+                </div>
+                <div className="ml-3 text-gray-300">
+                  Automatically maintain connections with top peers
+                </div>
+              </label>
+              {updatingSettings && (
+                <Loader2 className="h-4 w-4 animate-spin text-blue-300" />
+              )}
             </div>
-          )}
-       </div>
+            <p className="mt-1 text-xs text-gray-500">
+              When enabled, Aratiri will periodically connect to recommended
+              peers based on network centrality if not already connected, up to
+              a configured limit.
+            </p>
+          </div>
+        )}
+      </div>
        {/* --- End Settings Section --- */}
 
 
       {/* Main Error display (for peer/node fetching) */}
       {error && (
-        <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg mb-6">
+        <div className="mb-6 rounded-lg border border-red-500 bg-red-500/15 px-4 py-3 text-red-200">
           {error}
         </div>
       )}
 
-      {/* Connected Peers Table (remains mostly the same) */}
-      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-         <h3 className="text-lg font-bold mb-4 flex items-center">
-           <Users className="w-5 h-5 mr-2 text-yellow-400" />
-           Connected Peers ({connectedPeers.length})
-         </h3>
-         {loading ? (
-          <div className="flex justify-center items-center h-40">
-             <Zap className="w-8 h-8 text-yellow-400 animate-spin" />
-           </div>
-         ) : (
-          <div className="overflow-x-auto max-h-64">
-            <table className="w-full text-left">
+      {/* Connected Peers Table */}
+      <div className="rounded-lg border border-gray-700 bg-gray-800/80 p-5">
+        <h3 className="mb-4 flex items-center text-lg font-bold">
+          <Users className="mr-2 h-5 w-5 text-emerald-400" />
+          Connected Peers ({connectedPeers.length})
+        </h3>
+        {loading ? (
+          <div className="flex h-40 items-center justify-center">
+            <Zap className="h-8 w-8 animate-spin text-emerald-300" />
+          </div>
+        ) : (
+          <div className="max-h-64 overflow-x-auto">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="p-2">Address</th>
-                  <th className="p-2">Pubkey</th>
-                  <th className="p-2">Actions</th>
+                <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
+                  <th className="p-2 font-semibold">Address</th>
+                  <th className="p-2 font-semibold">Pubkey</th>
+                  <th className="p-2 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {connectedPeers.map((peer) => (
-                  <tr
-                    key={peer.pubKey || Math.random()}
-                    className="hover:bg-gray-700/50 border-b border-gray-700/50"
-                  >
-                    <td
-                      className="p-2 font-mono text-sm truncate max-w-xs group relative"
-                      title={peer.address || "N/A"}
+                {connectedPeers.length > 0 ? (
+                  connectedPeers.map((peer, index) => (
+                    <tr
+                      key={peer.pubKey || `${peer.address}-${index}`}
+                      className="border-b border-gray-800/70 transition-colors hover:bg-gray-800/60 last:border-0"
                     >
-                      <CopyableCell
-                        fullText={peer.address || "N/A"}
-                        copiedText={copiedText}
-                        onCopy={handleCopy}
+                      <td
+                        className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
+                        title={peer.address || "N/A"}
                       >
-                        {peer.address || "N/A"}
-                      </CopyableCell>
-                    </td>
-                    <td
-                      className="p-2 font-mono text-sm truncate max-w-xs group relative"
-                      title={peer.pubKey || "N/A"}
-                    >
-                      <CopyableCell
-                        fullText={peer.pubKey || "N/A"}
-                        copiedText={copiedText}
-                        onCopy={handleCopy}
+                        <CopyableCell
+                          fullText={peer.address || "N/A"}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {peer.address || "N/A"}
+                        </CopyableCell>
+                      </td>
+                      <td
+                        className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
+                        title={peer.pubKey || "N/A"}
                       >
-                        {peer.pubKey
-                          ? `${peer.pubKey.substring(0, 10)}...`
-                          : "N/A"}
-                      </CopyableCell>
-                    </td>
-                    <td className="p-2">
-                       <button
-                         onClick={() =>
-                           handleOpenModal({
-                             pubKey: peer.pubKey,
-                             alias: peer.address || 'Connected Peer',
-                             addresses: peer.address ? [peer.address] : [],
-                             capacity: 0,
-                             numChannels: 0,
-                             betweennessCentrality: 0,
-                           })
-                         }
-                         disabled={!peer.pubKey}
-                         className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition disabled:opacity-50"
-                       >
-                         Open Channel
-                       </button>
-                     </td>
-                  </tr>
-                ))}
-                {connectedPeers.length === 0 && (
+                        <CopyableCell
+                          fullText={peer.pubKey || "N/A"}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          {peer.pubKey
+                            ? `${peer.pubKey.substring(0, 8)}...${peer.pubKey.substring(
+                                peer.pubKey.length - 4
+                              )}`
+                            : "N/A"}
+                        </CopyableCell>
+                      </td>
+                      <td className="p-2 align-middle">
+                        <button
+                          onClick={() =>
+                            handleOpenModal({
+                              pubKey: peer.pubKey,
+                              alias: peer.address || "Connected Peer",
+                              addresses: peer.address ? [peer.address] : [],
+                              capacity: 0,
+                              numChannels: 0,
+                              betweennessCentrality: 0,
+                            })
+                          }
+                          disabled={!peer.pubKey}
+                          className="inline-flex items-center rounded-lg bg-emerald-500 px-3 py-1 text-sm font-semibold text-white transition hover:bg-emerald-500/80 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Open Channel
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
                     <td
                       colSpan={3}
-                      className="text-center text-gray-500 p-6"
+                      className="p-6 text-center text-sm text-gray-500"
                     >
-                      You are not connected to any peers.
+                      You are not connected to any peers yet.
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-         )}
-       </div>
+        )}
+      </div>
 
 
-       {/* Recommended Peers Table (remains the same) */}
-       <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 mt-8">
-         <div className="flex justify-between items-center mb-4">
-           <h3 className="text-lg font-bold">Recommended Peers</h3>
-           <div className="relative">
-             <Search
-               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-               size={20}
-             />
-             <input
-               type="text"
-               placeholder="Search by alias..."
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-               className="bg-gray-700 border border-gray-600 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-             />
-           </div>
-         </div>
-         {loading ? (
-          <div className="flex justify-center items-center h-64">
-             <Zap className="w-8 h-8 text-yellow-400 animate-spin" />
-           </div>
-         ) : (
+      {/* Recommended Peers Table */}
+      <div className="mt-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h3 className="text-lg font-bold">Recommended Peers</h3>
+          <div className="relative w-full max-w-xs">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={20}
+            />
+            <input
+              type="text"
+              placeholder="Search by alias..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-lg border border-gray-700 bg-gray-900/60 pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
+            />
+          </div>
+        </div>
+        {loading ? (
+          <div className="flex h-64 items-center justify-center">
+            <Zap className="h-8 w-8 animate-spin text-sky-300" />
+          </div>
+        ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="p-2">Alias</th>
-                    <th className="p-2 hidden md:table-cell">Channels</th>
-                    <th className="p-2 hidden lg:table-cell">
+                  <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
+                    <th className="p-2 font-semibold">Alias</th>
+                    <th className="p-2 font-semibold hidden md:table-cell">
+                      Channels
+                    </th>
+                    <th className="p-2 font-semibold hidden lg:table-cell">
                       Capacity (sats)
                     </th>
-                    <th className="p-2 hidden lg:table-cell">Centrality</th>
-                    <th className="p-2">Actions</th>
+                    <th className="p-2 font-semibold hidden lg:table-cell">
+                      Centrality
+                    </th>
+                    <th className="p-2 font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedRecommendedNodes.map((node) => (
-                    <tr
-                      key={node.pubKey}
-                      className="hover:bg-gray-700/50 border-b border-gray-700/50"
-                    >
-                      <td
-                        className="p-2 font-mono text-sm truncate max-w-xs group relative"
-                        title={node.alias}
+                  {paginatedRecommendedNodes.length > 0 ? (
+                    paginatedRecommendedNodes.map((node) => (
+                      <tr
+                        key={node.pubKey}
+                        className="border-b border-gray-800/70 transition-colors hover:bg-gray-800/60 last:border-0"
                       >
-                        <CopyableCell
-                          fullText={node.alias || node.pubKey}
-                          copiedText={copiedText}
-                          onCopy={handleCopy}
+                        <td
+                          className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
+                          title={node.alias || node.pubKey}
                         >
-                          {node.alias || `${node.pubKey.substring(0, 10)}...`}
-                        </CopyableCell>
-                      </td>
-                      <td className="p-2 hidden md:table-cell group relative">
-                        <CopyableCell
-                          fullText={String(node.numChannels)}
-                          copiedText={copiedText}
-                          onCopy={handleCopy}
-                        >
-                          {node.numChannels}
-                        </CopyableCell>
-                      </td>
-                      <td className="p-2 hidden lg:table-cell group relative">
-                        <CopyableCell
-                          fullText={node.capacity.toLocaleString()}
-                          copiedText={copiedText}
-                          onCopy={handleCopy}
-                        >
-                          {node.capacity.toLocaleString()}
-                        </CopyableCell>
-                      </td>
-                      <td className="p-2 hidden lg:table-cell group relative">
-                        <CopyableCell
-                          fullText={node.betweennessCentrality.toFixed(6)}
-                          copiedText={copiedText}
-                          onCopy={handleCopy}
-                        >
-                          {node.betweennessCentrality.toFixed(6)}
-                        </CopyableCell>
-                      </td>
-                      <td className="p-2">
-                         <button
-                           onClick={() => handleConnect(node)}
-                           disabled={connectingNode === node.pubKey || !node.addresses || node.addresses.length === 0} 
-                           className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm transition flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                           title={(!node.addresses || node.addresses.length === 0) ? "Node has no advertised address" : "Connect"}
-                         >
-                           {connectingNode === node.pubKey ? (
-                             <>
-                               <Wifi
-                                 size={16}
-                                 className="mr-1 animate-pulse"
-                               />
-                               Connecting...
-                             </>
-                           ) : (
-                             "Connect"
-                           )}
-                         </button>
-                       </td>
-                    </tr>
-                  ))}
-                  {paginatedRecommendedNodes.length === 0 && !loading && (
+                          <CopyableCell
+                            fullText={node.alias || node.pubKey}
+                            copiedText={copiedText}
+                            onCopy={handleCopy}
+                          >
+                            {node.alias ||
+                              `${node.pubKey.substring(0, 10)}...${node.pubKey.substring(
+                                node.pubKey.length - 4
+                              )}`}
+                          </CopyableCell>
+                        </td>
+                        <td className="p-2 align-middle hidden md:table-cell">
+                          <CopyableCell
+                            fullText={String(node.numChannels)}
+                            copiedText={copiedText}
+                            onCopy={handleCopy}
+                          >
+                            {node.numChannels}
+                          </CopyableCell>
+                        </td>
+                        <td className="p-2 align-middle hidden lg:table-cell">
+                          <CopyableCell
+                            fullText={node.capacity.toLocaleString()}
+                            copiedText={copiedText}
+                            onCopy={handleCopy}
+                          >
+                            {node.capacity.toLocaleString()}{" "}
+                            <span className="text-xs text-gray-400">sats</span>
+                          </CopyableCell>
+                        </td>
+                        <td className="p-2 align-middle hidden lg:table-cell">
+                          <CopyableCell
+                            fullText={node.betweennessCentrality.toFixed(6)}
+                            copiedText={copiedText}
+                            onCopy={handleCopy}
+                          >
+                            {node.betweennessCentrality.toFixed(6)}
+                          </CopyableCell>
+                        </td>
+                        <td className="p-2 align-middle">
+                          <button
+                            onClick={() => handleConnect(node)}
+                            disabled={
+                              connectingNode === node.pubKey ||
+                              !node.addresses ||
+                              node.addresses.length === 0
+                            }
+                            className="inline-flex items-center rounded-lg bg-sky-500 px-3 py-1 text-sm font-semibold text-white transition hover:bg-sky-500/80 disabled:cursor-not-allowed disabled:opacity-60"
+                            title={
+                              !node.addresses || node.addresses.length === 0
+                                ? "Node has no advertised address"
+                                : "Connect"
+                            }
+                          >
+                            {connectingNode === node.pubKey ? (
+                              <>
+                                <Wifi
+                                  size={16}
+                                  className="mr-1 animate-pulse"
+                                />
+                                Connecting...
+                              </>
+                            ) : (
+                              "Connect"
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
                     <tr>
                       <td
                         colSpan={5}
-                        className="text-center text-gray-500 p-8"
+                        className="p-8 text-center text-sm text-gray-500"
                       >
-                         {searchTerm ? `No recommended peers found matching "${searchTerm}".` : "No recommended peers found or all are connected."}
-                       </td>
+                        {searchTerm
+                          ? `No recommended peers match "${searchTerm}".`
+                          : "No recommended peers found or all are already connected."}
+                      </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-            <div className="flex justify-between items-center mt-4">
-               <button
-                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                 disabled={currentPage === 1 || totalPages === 0}
-                 className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center disabled:opacity-50"
-               >
-                 <ChevronLeft size={16} className="mr-1" />
-                 Previous
-               </button>
-               <span className="text-gray-400">
-                 Page {totalPages > 0 ? currentPage : 0} of {totalPages}
-               </span>
-               <button
-                 onClick={() =>
-                   setCurrentPage((p) => Math.min(totalPages, p + 1))
-                 }
-                 disabled={currentPage === totalPages || totalPages === 0}
-                 className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg flex items-center disabled:opacity-50"
-               >
-                 Next
-                 <ChevronRight size={16} className="ml-1" />
-               </button>
-             </div>
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1 || totalPages === 0}
+                className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft size={16} className="mr-1" />
+                Previous
+              </button>
+              <span className="text-gray-400">
+                Page {totalPages > 0 ? currentPage : 0} of {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+                <ChevronRight size={16} className="ml-1" />
+              </button>
+            </div>
           </>
-         )}
-       </div>
+        )}
+      </div>
 
     </main>
   );

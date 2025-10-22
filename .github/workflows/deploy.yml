@@ -24,6 +24,7 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/aratiri-admin:latest
           build-args: |
             NEXT_PUBLIC_API_BASE_URL=${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
+            NEXT_BASE_PATH=/admin
 
   deploy:
     needs: build-and-push

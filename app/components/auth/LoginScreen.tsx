@@ -1,24 +1,35 @@
 "use client";
 import { Server } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiCall } from "../../lib/api";
 
 export const LoginScreen = ({
   setToken,
   setIsAuthenticated,
+  authError,
+  onClearAuthError,
 }: {
   setToken: (token: string | null) => void;
   setIsAuthenticated: (auth: boolean) => void;
+  authError?: string | null;
+  onClearAuthError?: () => void;
 }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    onClearAuthError?.();
     try {
       const response = await apiCall("/auth/login", {
         method: "POST",
@@ -26,10 +37,25 @@ export const LoginScreen = ({
       });
       localStorage.setItem("aratiri_accessToken", response.accessToken);
       localStorage.setItem("aratiri_refreshToken", response.refreshToken);
+      const currentUser = await apiCall("/auth/me");
+      const role = currentUser?.role;
+      if (role !== "ADMIN" && role !== "SUPERADMIN") {
+        localStorage.removeItem("aratiri_accessToken");
+        localStorage.removeItem("aratiri_refreshToken");
+        throw new Error("You do not have permission to access the admin dashboard.");
+      }
       setToken(response.accessToken);
       setIsAuthenticated(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      localStorage.removeItem("aratiri_accessToken");
+      localStorage.removeItem("aratiri_refreshToken");
+      setToken(null);
+      setIsAuthenticated(false);
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to sign in. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }

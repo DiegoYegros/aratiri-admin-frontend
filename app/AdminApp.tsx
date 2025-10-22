@@ -5,6 +5,7 @@ import { LoginScreen } from "./components/auth/LoginScreen";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { Sidebar } from "./components/layout/Sidebar";
 import { PeersDashboard } from "./components/peers/PeersDashboard";
+import { apiCall } from "./lib/api";
 
 const decodeJwt = (token: string): { exp: number } | null => {
   try {
@@ -31,28 +32,82 @@ export default function AdminApp() {
   const [activeView, setActiveView] = useState("dashboard");
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("aratiri_accessToken");
-    if (storedToken) {
+    let isMounted = true;
+
+    const verifyStoredSession = async () => {
+      const storedToken = localStorage.getItem("aratiri_accessToken");
+      if (!storedToken) {
+        if (isMounted) {
+          setIsCheckingAuth(false);
+        }
+        return;
+      }
+
       const decodedToken = decodeJwt(storedToken);
-      if (decodedToken && decodedToken.exp * 1000 > Date.now()) {
-        setToken(storedToken);
-        setIsAuthenticated(true);
-      } else {
+      if (!decodedToken || decodedToken.exp * 1000 <= Date.now()) {
         localStorage.removeItem("aratiri_accessToken");
         localStorage.removeItem("aratiri_refreshToken");
+        if (isMounted) {
+          setIsCheckingAuth(false);
+        }
+        return;
       }
-    }
+
+      try {
+        const currentUser = await apiCall("/auth/me");
+        const role = currentUser?.role;
+        if (role === "ADMIN" || role === "SUPERADMIN") {
+          if (!isMounted) {
+            return;
+          }
+          setToken(storedToken);
+          setIsAuthenticated(true);
+          setAuthError(null);
+        } else {
+          localStorage.removeItem("aratiri_accessToken");
+          localStorage.removeItem("aratiri_refreshToken");
+          if (!isMounted) {
+            return;
+          }
+          setToken(null);
+          setIsAuthenticated(false);
+          setAuthError("You do not have permission to access the admin dashboard.");
+        }
+      } catch {
+        localStorage.removeItem("aratiri_accessToken");
+        localStorage.removeItem("aratiri_refreshToken");
+        if (!isMounted) {
+          return;
+        }
+        setToken(null);
+        setIsAuthenticated(false);
+        setAuthError("Session expired. Please sign in again.");
+      } finally {
+        if (isMounted) {
+          setIsCheckingAuth(false);
+        }
+      }
+    };
+
+    verifyStoredSession();
 
     const handleForceLogout = () => {
+      localStorage.removeItem("aratiri_accessToken");
+      localStorage.removeItem("aratiri_refreshToken");
       setToken(null);
       setIsAuthenticated(false);
+      setAuthError(null);
+      setIsCheckingAuth(false);
     };
 
     window.addEventListener("force-logout", handleForceLogout);
 
     return () => {
+      isMounted = false;
       window.removeEventListener("force-logout", handleForceLogout);
     };
   }, []);
@@ -62,6 +117,7 @@ export default function AdminApp() {
     localStorage.removeItem("aratiri_refreshToken");
     setToken(null);
     setIsAuthenticated(false);
+    setAuthError(null);
   };
 
   const handleRefresh = useCallback(() => {
@@ -92,6 +148,14 @@ export default function AdminApp() {
     }
   };
 
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center font-sans">
+        <p className="text-gray-300 text-lg">Loading...</p>
+      </div>
+    );
+  }
+
   if (isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-900 text-white font-sans flex">
@@ -112,6 +176,11 @@ export default function AdminApp() {
   }
 
   return (
-    <LoginScreen setToken={setToken} setIsAuthenticated={setIsAuthenticated} />
+    <LoginScreen
+      setToken={setToken}
+      setIsAuthenticated={setIsAuthenticated}
+      authError={authError}
+      onClearAuthError={() => setAuthError(null)}
+    />
   );
 }

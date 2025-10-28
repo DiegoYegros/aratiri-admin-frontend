@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, FormEvent } from "react";
 import { apiCall } from "@/app/lib/api";
 import {
   Zap,
@@ -44,6 +44,10 @@ export const PeersDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [connectingNode, setConnectingNode] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [manualPubKey, setManualPubKey] = useState("");
+  const [manualHost, setManualHost] = useState("");
+  const [manualConnectLoading, setManualConnectLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const [isAutoManageEnabled, setIsAutoManageEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -127,6 +131,7 @@ export const PeersDashboard = () => {
   const handleConnect = async (node: RemoteNode) => {
     setConnectingNode(node.pubKey);
     setError("");
+    setSuccessMessage("");
     try {
       const host = node.addresses[0];
       if (!host) {
@@ -136,11 +141,45 @@ export const PeersDashboard = () => {
         method: "POST",
         body: JSON.stringify({ pubkey: node.pubKey, host }),
       });
-      fetchData();
+      await fetchData();
+      setSuccessMessage(
+        `Connection initiated with ${node.alias || node.pubKey.substring(0, 10)}.`
+      );
     } catch (err: any) {
       setError(`Failed to connect to ${node.alias || node.pubKey.substring(0,10)}: ${err.message}`);
     } finally {
       setConnectingNode(null);
+    }
+  };
+
+  const handleManualConnect = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setSuccessMessage("");
+    if (!manualPubKey.trim() || !manualHost.trim()) {
+      setError("Pubkey and host are required to connect manually.");
+      return;
+    }
+
+    setManualConnectLoading(true);
+    try {
+      await apiCall("/admin/connect-peer", {
+        method: "POST",
+        body: JSON.stringify({
+          pubkey: manualPubKey.trim(),
+          host: manualHost.trim(),
+        }),
+      });
+      setManualPubKey("");
+      setManualHost("");
+      await fetchData();
+      setSuccessMessage(
+        `Connection initiated with ${manualPubKey.trim().substring(0, 16)}...`
+      );
+    } catch (err: any) {
+      setError(`Failed to connect to peer: ${err.message}`);
+    } finally {
+      setManualConnectLoading(false);
     }
   };
 
@@ -302,6 +341,64 @@ export const PeersDashboard = () => {
           {error}
         </div>
       )}
+      {successMessage && (
+        <div className="mb-6 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-200">
+          {successMessage}
+        </div>
+      )}
+
+      <div className="mb-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
+        <h3 className="mb-3 flex items-center text-lg font-bold">
+          <Wifi className="mr-2 h-5 w-5 text-sky-400" />
+          Manual Peer Connection
+        </h3>
+        <p className="mb-4 text-sm text-gray-400">
+          Connect to a specific peer by providing their public key and reachable host (useful for Tor or custom peers).
+        </p>
+        <form
+          onSubmit={handleManualConnect}
+          className="flex flex-col gap-3 md:flex-row md:items-end"
+        >
+          <div className="flex-1">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+              Peer Pubkey
+            </label>
+            <input
+              type="text"
+              value={manualPubKey}
+              onChange={(e) => setManualPubKey(e.target.value)}
+              placeholder="e.g. 02ab..."
+              className="w-full rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
+              Host (IP / Onion Address)
+            </label>
+            <input
+              type="text"
+              value={manualHost}
+              onChange={(e) => setManualHost(e.target.value)}
+              placeholder="e.g. 123.45.67.89:9735 or xyz.onion:9735"
+              className="w-full rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={manualConnectLoading}
+            className="inline-flex items-center justify-center rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-sky-500/80 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {manualConnectLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              "Connect"
+            )}
+          </button>
+        </form>
+      </div>
 
       {/* Connected Peers Table */}
       <div className="rounded-lg border border-gray-700 bg-gray-800/80 p-5">

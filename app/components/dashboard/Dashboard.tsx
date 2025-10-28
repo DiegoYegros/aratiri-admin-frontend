@@ -82,38 +82,39 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
       )}
 
       {nodeInfo && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Alias" value={nodeInfo.alias} icon={Info} />
-          <StatCard title="Version" value={nodeInfo.version} icon={Package} />
-          <StatCard
-            title="Block Height"
-            value={nodeInfo.blockHeight.toLocaleString()}
-            icon={Hash}
-          />
-          <StatCard
-            title="Commit Hash"
-            value={nodeInfo.commitHash}
-            icon={GitCommit}
-          />
-          <StatCard title="Peers" value={nodeInfo.numPeers} icon={Users} />
-          <StatCard
-            title="Active Channels"
-            value={nodeInfo.numActiveChannels}
-            icon={Link2}
-          />
-          <StatCard
-            title="Pending Channels"
-            value={nodeInfo.numPendingChannels}
-            icon={Link2}
-          />
-          <StatCard
-            title="Network"
-            value={
-              nodeInfo.chains[0]?.network || "N/A"
-            }
-            icon={Network}
-          />
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+            <StatCard title="Alias" value={nodeInfo.alias} icon={Info} />
+            <StatCard title="Version" value={nodeInfo.version} icon={Package} />
+            <StatCard
+              title="Block Height"
+              value={nodeInfo.blockHeight.toLocaleString()}
+              icon={Hash}
+            />
+            <StatCard
+              title="Commit Hash"
+              value={nodeInfo.commitHash}
+              icon={GitCommit}
+            />
+            <StatCard title="Peers" value={nodeInfo.numPeers} icon={Users} />
+            <StatCard
+              title="Active Channels"
+              value={nodeInfo.numActiveChannels}
+              icon={Link2}
+            />
+            <StatCard
+              title="Pending Channels"
+              value={nodeInfo.numPendingChannels}
+              icon={Link2}
+            />
+            <StatCard
+              title="Network"
+              value={nodeInfo.chains[0]?.network || "N/A"}
+              icon={Network}
+            />
+          </div>
+
+        </>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -12,6 +12,8 @@ import {
   Loader2,
   PlusCircle,
   Star,
+  ClipboardCopy,
+  Check,
 } from "lucide-react";
 import { OpenChannelModal } from "../channels/OpenChannelModal";
 import { CopyableCell } from "../ui/CopyableCell";
@@ -48,19 +50,24 @@ export const PeersDashboard = () => {
   const [manualHost, setManualHost] = useState("");
   const [manualConnectLoading, setManualConnectLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [nodeIdentity, setNodeIdentity] = useState<{
+    pubkey: string;
+    uris: string[];
+  } | null>(null);
 
   const [isAutoManageEnabled, setIsAutoManageEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState("");
   const [updatingSettings, setUpdatingSettings] = useState(false);
-  
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [nodesData, peersData] = await Promise.all([
+      const [nodesData, peersData, nodeInfo] = await Promise.all([
         apiCall("/admin/remotes"),
         apiCall("/admin/peers"),
+        apiCall("/admin/node-info"),
       ]);
 
       const connectedPubkeys = new Set(
@@ -73,8 +80,15 @@ export const PeersDashboard = () => {
           (node: RemoteNode) => !connectedPubkeys.has(node.pubKey)
         )
       );
+      setNodeIdentity({
+        pubkey: nodeInfo?.identityPubkey || "",
+        uris: Array.isArray(nodeInfo?.uris)
+          ? nodeInfo.uris.filter((uri): uri is string => Boolean(uri))
+          : [],
+      });
     } catch (err: any) {
       setError("Failed to fetch peer/node data: " + err.message);
+      setNodeIdentity(null);
     } finally {
       setLoading(false);
     }
@@ -229,6 +243,40 @@ export const PeersDashboard = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => nodeIdentity?.pubkey && handleCopy(nodeIdentity.pubkey)}
+              disabled={!nodeIdentity?.pubkey}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+              title={nodeIdentity?.pubkey || "Pubkey not available"}
+              aria-label="Copy node pubkey"
+            >
+              {copiedText === nodeIdentity?.pubkey ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <ClipboardCopy className="h-4 w-4 text-yellow-300" />
+              )}
+              {copiedText === nodeIdentity?.pubkey ? "Copied" : "Copy Pubkey"}
+            </button>
+            <button
+              onClick={() =>
+                nodeIdentity?.uris?.[0] && handleCopy(nodeIdentity.uris[0])
+              }
+              disabled={!nodeIdentity?.uris?.length}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+              title={
+                nodeIdentity?.uris?.length
+                  ? nodeIdentity.uris.join("\n")
+                  : "URI not available"
+              }
+              aria-label="Copy node URI"
+            >
+              {copiedText === nodeIdentity?.uris?.[0] ? (
+                <Check className="h-4 w-4 text-emerald-400" />
+              ) : (
+                <ClipboardCopy className="h-4 w-4 text-yellow-300" />
+              )}
+              {copiedText === nodeIdentity?.uris?.[0] ? "Copied" : "Copy Node URI"}
+            </button>
             <button
               onClick={() => fetchData()}
               disabled={loading}

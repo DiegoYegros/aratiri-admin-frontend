@@ -6,12 +6,14 @@ import {
   LogOut,
   Menu,
   Server,
+  Settings as SettingsIcon,
   Users,
   Wallet,
   X,
   RefreshCw,
 } from "lucide-react";
 import { useMemo } from "react";
+import { useLanguage } from "@/app/lib/language";
 
 interface MobileNavProps {
   isRefreshing: boolean;
@@ -25,13 +27,13 @@ interface MobileNavProps {
 
 const NAV_ITEMS: Array<{
   key: string;
-  label: string;
   icon: typeof LayoutDashboard;
 }> = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { key: "wallet", label: "Wallet", icon: Wallet },
-  { key: "channels", label: "Channels", icon: Link2 },
-  { key: "peers", label: "Peers", icon: Users },
+  { key: "dashboard", icon: LayoutDashboard },
+  { key: "wallet", icon: Wallet },
+  { key: "channels", icon: Link2 },
+  { key: "peers", icon: Users },
+  { key: "settings", icon: SettingsIcon },
 ];
 
 export const MobileNav = ({
@@ -43,9 +45,23 @@ export const MobileNav = ({
   isMenuOpen,
   onToggleMenu,
 }: MobileNavProps) => {
+  const { t } = useLanguage();
+
+  const itemsWithLabels = useMemo(
+    () =>
+      NAV_ITEMS.map((item) => ({
+        ...item,
+        label: t(`navigation.${item.key}`),
+      })),
+    [t]
+  );
+
   const activeLabel = useMemo(() => {
-    return NAV_ITEMS.find((item) => item.key === activeView)?.label || "Dashboard";
-  }, [activeView]);
+    return (
+      itemsWithLabels.find((item) => item.key === activeView)?.label ||
+      t("navigation.dashboard")
+    );
+  }, [activeView, itemsWithLabels, t]);
 
   return (
     <>
@@ -55,7 +71,7 @@ export const MobileNav = ({
             type="button"
             onClick={onToggleMenu}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800/70 text-gray-200 transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
-            aria-label="Toggle navigation menu"
+            aria-label={t("mobileNav.navigation")}
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -63,7 +79,7 @@ export const MobileNav = ({
           <div className="flex flex-col items-center text-center">
             <div className="flex items-center gap-2">
               <Server className="h-5 w-5 text-yellow-400" />
-              <span className="text-lg font-semibold">Aratiri Admin</span>
+              <span className="text-lg font-semibold">{t("common.appName")}</span>
             </div>
             <span className="text-xs uppercase tracking-wide text-gray-400">
               {activeLabel}
@@ -75,7 +91,7 @@ export const MobileNav = ({
               type="button"
               onClick={onRefresh}
               className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800/70 text-gray-200 transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
-              aria-label="Refresh data"
+              aria-label={t("common.refresh")}
             >
               <RefreshCw
                 className={`h-5 w-5 ${
@@ -87,7 +103,7 @@ export const MobileNav = ({
               type="button"
               onClick={onLogout}
               className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800/70 text-gray-200 transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-yellow-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
-              aria-label="Sign out"
+              aria-label={t("common.logout")}
             >
               <LogOut className="h-5 w-5" />
             </button>
@@ -107,22 +123,26 @@ export const MobileNav = ({
                 <Server className="h-5 w-5 text-yellow-400" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-200">Navigation</p>
-                <p className="text-xs text-gray-400">Manage every part of your node</p>
+                <p className="text-sm font-semibold text-gray-200">
+                  {t("mobileNav.navigation")}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {t("mobileNav.subtitle")}
+                </p>
               </div>
             </div>
             <button
               type="button"
               onClick={onToggleMenu}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-700 bg-gray-800/70 text-gray-300 transition hover:bg-gray-800"
-              aria-label="Close navigation"
+              aria-label={t("mobileNav.navigation")}
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
           <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-            {NAV_ITEMS.map(({ key, label, icon: Icon }) => {
+            {itemsWithLabels.map(({ key, label, icon: Icon }) => {
               const isActive = activeView === key;
               return (
                 <button
@@ -140,7 +160,7 @@ export const MobileNav = ({
                     <span className="flex-1">{label}</span>
                     {isActive && (
                       <span className="rounded-full bg-yellow-500/20 px-3 py-1 text-xs font-semibold text-yellow-200">
-                        Active
+                        {t("mobileNav.active")}
                       </span>
                     )}
                   </span>
@@ -156,7 +176,7 @@ export const MobileNav = ({
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
             >
               <LogOut className="h-4 w-4" />
-              Sign out
+              {t("mobileNav.signOut")}
             </button>
           </div>
         </div>
@@ -172,3 +192,4 @@ export const MobileNav = ({
     </>
   );
 };
+

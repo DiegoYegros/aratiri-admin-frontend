@@ -8,7 +8,7 @@ import {
   Search,
   Wifi,
   Users,
-  Settings,
+  Settings as SettingsIcon,
   Loader2,
   PlusCircle,
   Star,
@@ -18,24 +18,26 @@ import {
 import { OpenChannelModal } from "../channels/OpenChannelModal";
 import { CopyableCell } from "../ui/CopyableCell";
 import { StatCard } from "../ui/StatCard";
+import { useLanguage } from "@/app/lib/language";
 
 interface RemoteNode {
-    pubKey: string;
-    alias: string;
-    addresses: string[];
-    capacity: number;
-    numChannels: number;
-    betweennessCentrality: number;
+  pubKey: string;
+  alias: string;
+  addresses: string[];
+  capacity: number;
+  numChannels: number;
+  betweennessCentrality: number;
 }
 
 interface Peer {
-    pubKey: string;
-    address: string;
+  pubKey: string;
+  address: string;
 }
 
 const ITEMS_PER_PAGE = 10;
 
 export const PeersDashboard = () => {
+  const { t } = useLanguage();
   const [recommendedNodes, setRecommendedNodes] = useState<RemoteNode[]>([]);
   const [connectedPeers, setConnectedPeers] = useState<Peer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,13 +89,13 @@ export const PeersDashboard = () => {
           : [],
       });
     } catch (err: any) {
-      setError("Failed to fetch peer/node data: " + err.message);
+      setError(t("peers.errors.fetch", { message: err?.message || "" }));
       setNodeIdentity(null);
     } finally {
       setLoading(false);
     }
-  }, []); 
-  
+  }, [t]);
+
   const fetchSettings = useCallback(async () => {
     setSettingsLoading(true);
     setSettingsError("");
@@ -101,17 +103,19 @@ export const PeersDashboard = () => {
       const settingsData = await apiCall("/admin/settings");
       setIsAutoManageEnabled(settingsData.auto_manage_peers || false);
     } catch (err: any) {
-      setSettingsError("Failed to fetch settings: " + err.message);
+      setSettingsError(
+        t("peers.errors.fetch", { message: err?.message || "" })
+      );
       setIsAutoManageEnabled(false);
     } finally {
       setSettingsLoading(false);
     }
-  }, []);
+  }, [t]);
+
   useEffect(() => {
     fetchData();
     fetchSettings();
   }, [fetchData, fetchSettings]);
-
 
   const handleToggleAutoManage = async () => {
     const newState = !isAutoManageEnabled;
@@ -124,13 +128,18 @@ export const PeersDashboard = () => {
       });
       setIsAutoManageEnabled(newState);
     } catch (err: any) {
-      setSettingsError("Failed to update setting: " + err.message);
+      setSettingsError(
+        t("peers.errors.connect", {
+          name: t("peers.stats.autoManage"),
+          message: err?.message || "",
+        })
+      );
       setIsAutoManageEnabled(!newState);
     } finally {
       setUpdatingSettings(false);
     }
   };
-  
+
   const handleOpenModal = (node: RemoteNode | null) => {
     setSelectedNode(node);
     setIsModalOpen(true);
@@ -149,18 +158,20 @@ export const PeersDashboard = () => {
     try {
       const host = node.addresses[0];
       if (!host) {
-        throw new Error("Node has no advertised address.");
+        throw new Error(t("peers.connectButton.noAddress"));
       }
       await apiCall("/admin/connect-peer", {
         method: "POST",
         body: JSON.stringify({ pubkey: node.pubKey, host }),
       });
       await fetchData();
-      setSuccessMessage(
-        `Connection initiated with ${node.alias || node.pubKey.substring(0, 10)}.`
-      );
+      const name = node.alias || node.pubKey.substring(0, 10);
+      setSuccessMessage(t("peers.success.connected", { name }));
     } catch (err: any) {
-      setError(`Failed to connect to ${node.alias || node.pubKey.substring(0,10)}: ${err.message}`);
+      const name = node.alias || node.pubKey.substring(0, 10);
+      setError(
+        t("peers.errors.connect", { name, message: err?.message || "" })
+      );
     } finally {
       setConnectingNode(null);
     }
@@ -171,7 +182,7 @@ export const PeersDashboard = () => {
     setError("");
     setSuccessMessage("");
     if (!manualPubKey.trim() || !manualHost.trim()) {
-      setError("Pubkey and host are required to connect manually.");
+      setError(t("peers.errors.manualRequired"));
       return;
     }
 
@@ -187,11 +198,10 @@ export const PeersDashboard = () => {
       setManualPubKey("");
       setManualHost("");
       await fetchData();
-      setSuccessMessage(
-        `Connection initiated with ${manualPubKey.trim().substring(0, 16)}...`
-      );
+      const name = manualPubKey.trim().substring(0, 16) + "...";
+      setSuccessMessage(t("peers.success.connected", { name }));
     } catch (err: any) {
-      setError(`Failed to connect to peer: ${err.message}`);
+      setError(t("peers.errors.manual", { message: err?.message || "" }));
     } finally {
       setManualConnectLoading(false);
     }
@@ -223,6 +233,9 @@ export const PeersDashboard = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  const autoManageLabel = isAutoManageEnabled
+    ? t("common.enabled")
+    : t("common.disabled");
 
   return (
     <main className="flex-grow p-4 sm:p-8 overflow-y-auto">
@@ -237,9 +250,11 @@ export const PeersDashboard = () => {
       <div className="mb-8 rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-900/90 via-gray-900 to-gray-800 px-6 py-6 shadow-lg">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Peers</h2>
+            <h2 className="text-3xl font-semibold tracking-tight">
+              {t("peers.title")}
+            </h2>
             <p className="mt-1 text-sm text-gray-400">
-              Keep your node well connected with curated peer recommendations.
+              {t("peers.subtitle")}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -247,15 +262,16 @@ export const PeersDashboard = () => {
               onClick={() => nodeIdentity?.pubkey && handleCopy(nodeIdentity.pubkey)}
               disabled={!nodeIdentity?.pubkey}
               className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-              title={nodeIdentity?.pubkey || "Pubkey not available"}
-              aria-label="Copy node pubkey"
+              title={nodeIdentity?.pubkey || t("peers.nodeIdentity.pubkeyUnavailable")}
             >
               {copiedText === nodeIdentity?.pubkey ? (
                 <Check className="h-4 w-4 text-emerald-400" />
               ) : (
                 <ClipboardCopy className="h-4 w-4 text-yellow-300" />
               )}
-              {copiedText === nodeIdentity?.pubkey ? "Copied" : "Copy Pubkey"}
+              {copiedText === nodeIdentity?.pubkey
+                ? t("common.copied")
+                : t("peers.actions.copyPubkey")}
             </button>
             <button
               onClick={() =>
@@ -266,16 +282,17 @@ export const PeersDashboard = () => {
               title={
                 nodeIdentity?.uris?.length
                   ? nodeIdentity.uris.join("\n")
-                  : "URI not available"
+                  : t("peers.nodeIdentity.uriUnavailable")
               }
-              aria-label="Copy node URI"
             >
               {copiedText === nodeIdentity?.uris?.[0] ? (
                 <Check className="h-4 w-4 text-emerald-400" />
               ) : (
                 <ClipboardCopy className="h-4 w-4 text-yellow-300" />
               )}
-              {copiedText === nodeIdentity?.uris?.[0] ? "Copied" : "Copy Node URI"}
+              {copiedText === nodeIdentity?.uris?.[0]
+                ? t("common.copied")
+                : t("peers.actions.copyUri")}
             </button>
             <button
               onClick={() => fetchData()}
@@ -283,54 +300,55 @@ export const PeersDashboard = () => {
               className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow hover:bg-gray-800 transition focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Zap
-                className={`h-4 w-4 ${loading ? "animate-spin text-yellow-300" : "text-yellow-400"}`}
+                className={`h-4 w-4 ${
+                  loading ? "animate-spin text-yellow-300" : "text-yellow-400"
+                }`}
               />
-              Refresh
+              {t("peers.actions.refresh")}
             </button>
             <button
               onClick={() => handleOpenModal(null)}
               className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 via-indigo-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:from-blue-400 hover:to-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
             >
               <PlusCircle className="h-5 w-5" />
-              Open Channel
+              {t("peers.actions.openChannel")}
             </button>
           </div>
         </div>
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Connected Peers"
+            title={t("peers.stats.connected")}
             value={connectedPeers.length}
             icon={Users}
           />
           <StatCard
-            title="Recommended Nodes"
+            title={t("peers.stats.recommended")}
             value={recommendedNodes.length}
             icon={Star}
           />
           <StatCard
-            title="Auto-Manage Peers"
-            value={isAutoManageEnabled ? "Enabled" : "Disabled"}
-            icon={Settings}
+            title={t("peers.stats.autoManage")}
+            value={autoManageLabel}
+            icon={SettingsIcon}
           />
           <StatCard
-            title="Recommended Capacity"
+            title={t("peers.stats.recommendedCapacity")}
             value={totalRecommendedCapacity.toLocaleString()}
-            unit="sats"
+            unit={t("common.sats")}
             icon={Wifi}
           />
         </div>
       </div>
 
-      {/* --- Settings Section --- */}
       <div className="mb-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
         <h3 className="mb-3 flex items-center text-lg font-bold">
-          <Settings className="mr-2 h-5 w-5 text-blue-400" />
-          Peer Management Settings
+          <SettingsIcon className="mr-2 h-5 w-5 text-blue-400" />
+          {t("peers.settings.title")}
         </h3>
         {settingsLoading ? (
           <div className="flex items-center text-gray-400">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Loading settings...
+            {t("peers.settings.loading")}
           </div>
         ) : (
           <div>
@@ -365,7 +383,7 @@ export const PeersDashboard = () => {
                   ></div>
                 </div>
                 <div className="ml-3 text-gray-300">
-                  Automatically maintain connections with top peers
+                  {t("peers.settings.toggleDescription")}
                 </div>
               </label>
               {updatingSettings && (
@@ -373,17 +391,12 @@ export const PeersDashboard = () => {
               )}
             </div>
             <p className="mt-1 text-xs text-gray-500">
-              When enabled, Aratiri will periodically connect to recommended
-              peers based on network centrality if not already connected, up to
-              a configured limit.
+              {t("peers.settings.helper")}
             </p>
           </div>
         )}
       </div>
-       {/* --- End Settings Section --- */}
 
-
-      {/* Main Error display (for peer/node fetching) */}
       {error && (
         <div className="mb-6 rounded-lg border border-red-500 bg-red-500/15 px-4 py-3 text-red-200">
           {error}
@@ -398,10 +411,10 @@ export const PeersDashboard = () => {
       <div className="mb-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
         <h3 className="mb-3 flex items-center text-lg font-bold">
           <Wifi className="mr-2 h-5 w-5 text-sky-400" />
-          Manual Peer Connection
+          {t("peers.manual.title")}
         </h3>
         <p className="mb-4 text-sm text-gray-400">
-          Connect to a specific peer by providing their public key and reachable host (useful for Tor or custom peers).
+          {t("peers.manual.description")}
         </p>
         <form
           onSubmit={handleManualConnect}
@@ -409,25 +422,25 @@ export const PeersDashboard = () => {
         >
           <div className="flex-1">
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Peer Pubkey
+              {t("peers.manual.peerPubkey")}
             </label>
             <input
               type="text"
               value={manualPubKey}
               onChange={(e) => setManualPubKey(e.target.value)}
-              placeholder="e.g. 02ab..."
+              placeholder={t("peers.manual.pubkeyPlaceholder")}
               className="w-full rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
             />
           </div>
           <div className="flex-1">
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-              Host (IP / Onion Address)
+              {t("peers.manual.host")}
             </label>
             <input
               type="text"
               value={manualHost}
               onChange={(e) => setManualHost(e.target.value)}
-              placeholder="e.g. 123.45.67.89:9735 or xyz.onion:9735"
+              placeholder={t("peers.manual.hostPlaceholder")}
               className="w-full rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
             />
           </div>
@@ -439,20 +452,19 @@ export const PeersDashboard = () => {
             {manualConnectLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connecting...
+                {t("peers.manual.submitting")}
               </>
             ) : (
-              "Connect"
+              t("peers.manual.submit")
             )}
           </button>
         </form>
       </div>
 
-      {/* Connected Peers Table */}
       <div className="rounded-lg border border-gray-700 bg-gray-800/80 p-5">
         <h3 className="mb-4 flex items-center text-lg font-bold">
           <Users className="mr-2 h-5 w-5 text-emerald-400" />
-          Connected Peers ({connectedPeers.length})
+          {t("peers.connectedPeers.title", { count: connectedPeers.length })}
         </h3>
         {loading ? (
           <div className="flex h-40 items-center justify-center">
@@ -463,9 +475,15 @@ export const PeersDashboard = () => {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
-                  <th className="p-2 font-semibold">Address</th>
-                  <th className="p-2 font-semibold">Pubkey</th>
-                  <th className="p-2 font-semibold">Actions</th>
+                  <th className="p-2 font-semibold">
+                    {t("peers.connectedPeers.address")}
+                  </th>
+                  <th className="p-2 font-semibold">
+                    {t("peers.connectedPeers.pubkey")}
+                  </th>
+                  <th className="p-2 font-semibold">
+                    {t("peers.connectedPeers.actions")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -477,22 +495,22 @@ export const PeersDashboard = () => {
                     >
                       <td
                         className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
-                        title={peer.address || "N/A"}
+                        title={peer.address || t("common.notAvailable")}
                       >
                         <CopyableCell
-                          fullText={peer.address || "N/A"}
+                          fullText={peer.address || t("common.notAvailable")}
                           copiedText={copiedText}
                           onCopy={handleCopy}
                         >
-                          {peer.address || "N/A"}
+                          {peer.address || t("common.notAvailable")}
                         </CopyableCell>
                       </td>
                       <td
                         className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
-                        title={peer.pubKey || "N/A"}
+                        title={peer.pubKey || t("common.notAvailable")}
                       >
                         <CopyableCell
-                          fullText={peer.pubKey || "N/A"}
+                          fullText={peer.pubKey || t("common.notAvailable")}
                           copiedText={copiedText}
                           onCopy={handleCopy}
                         >
@@ -500,7 +518,7 @@ export const PeersDashboard = () => {
                             ? `${peer.pubKey.substring(0, 8)}...${peer.pubKey.substring(
                                 peer.pubKey.length - 4
                               )}`
-                            : "N/A"}
+                            : t("common.notAvailable")}
                         </CopyableCell>
                       </td>
                       <td className="p-2 align-middle">
@@ -508,7 +526,7 @@ export const PeersDashboard = () => {
                           onClick={() =>
                             handleOpenModal({
                               pubKey: peer.pubKey,
-                              alias: peer.address || "Connected Peer",
+                              alias: peer.address || t("peers.connectedPeers.fallbackAlias"),
                               addresses: peer.address ? [peer.address] : [],
                               capacity: 0,
                               numChannels: 0,
@@ -518,7 +536,7 @@ export const PeersDashboard = () => {
                           disabled={!peer.pubKey}
                           className="inline-flex items-center rounded-lg bg-emerald-500 px-3 py-1 text-sm font-semibold text-white transition hover:bg-emerald-500/80 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          Open Channel
+                          {t("peers.actions.openChannel")}
                         </button>
                       </td>
                     </tr>
@@ -527,9 +545,9 @@ export const PeersDashboard = () => {
                   <tr>
                     <td
                       colSpan={3}
-                      className="p-6 text-center text-sm text-gray-500"
+                      className="p-8 text-center text-sm text-gray-500"
                     >
-                      You are not connected to any peers yet.
+                      {t("peers.tables.empty")}
                     </td>
                   </tr>
                 )}
@@ -539,11 +557,12 @@ export const PeersDashboard = () => {
         )}
       </div>
 
-
-      {/* Recommended Peers Table */}
       <div className="mt-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
-        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h3 className="text-lg font-bold">Recommended Peers</h3>
+        <h3 className="mb-4 flex items-center text-lg font-bold">
+          <Users className="mr-2 h-5 w-5 text-sky-400" />
+          {t("peers.tables.recommendedTitle")}
+        </h3>
+        <div className="mb-4 flex items-center justify-between">
           <div className="relative w-full max-w-xs">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -551,158 +570,147 @@ export const PeersDashboard = () => {
             />
             <input
               type="text"
-              placeholder="Search by alias..."
+              placeholder={t("common.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-lg border border-gray-700 bg-gray-900/60 pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
             />
           </div>
         </div>
-        {loading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Zap className="h-8 w-8 animate-spin text-sky-300" />
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
-                    <th className="p-2 font-semibold">Alias</th>
-                    <th className="p-2 font-semibold hidden md:table-cell">
-                      Channels
-                    </th>
-                    <th className="p-2 font-semibold hidden lg:table-cell">
-                      Capacity (sats)
-                    </th>
-                    <th className="p-2 font-semibold hidden lg:table-cell">
-                      Centrality
-                    </th>
-                    <th className="p-2 font-semibold">Actions</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
+                <th className="p-2 font-semibold">{t("peers.tables.alias")}</th>
+                <th className="p-2 font-semibold hidden md:table-cell">
+                  {t("peers.tables.channels")}
+                </th>
+                <th className="p-2 font-semibold hidden lg:table-cell">
+                  {t("peers.tables.capacity")}
+                </th>
+                <th className="p-2 font-semibold hidden lg:table-cell">
+                  {t("peers.tables.centrality")}
+                </th>
+                <th className="p-2 font-semibold">{t("peers.tables.actions")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedRecommendedNodes.length > 0 ? (
+                paginatedRecommendedNodes.map((node) => (
+                  <tr
+                    key={node.pubKey}
+                    className="border-b border-gray-800/70 transition-colors hover:bg-gray-800/60 last:border-0"
+                  >
+                    <td
+                      className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
+                      title={node.alias || node.pubKey}
+                    >
+                      <CopyableCell
+                        fullText={node.alias || node.pubKey}
+                        copiedText={copiedText}
+                        onCopy={handleCopy}
+                      >
+                        {node.alias ||
+                          `${node.pubKey.substring(0, 10)}...${node.pubKey.substring(
+                            node.pubKey.length - 4
+                          )}`}
+                      </CopyableCell>
+                    </td>
+                    <td className="p-2 align-middle hidden md:table-cell">
+                      <CopyableCell
+                        fullText={String(node.numChannels)}
+                        copiedText={copiedText}
+                        onCopy={handleCopy}
+                      >
+                        {node.numChannels}
+                      </CopyableCell>
+                    </td>
+                    <td className="p-2 align-middle hidden lg:table-cell">
+                      <CopyableCell
+                        fullText={node.capacity.toLocaleString()}
+                        copiedText={copiedText}
+                        onCopy={handleCopy}
+                      >
+                        {node.capacity.toLocaleString()} {t("common.sats")}
+                      </CopyableCell>
+                    </td>
+                    <td className="p-2 align-middle hidden lg:table-cell">
+                      <CopyableCell
+                        fullText={node.betweennessCentrality.toFixed(6)}
+                        copiedText={copiedText}
+                        onCopy={handleCopy}
+                      >
+                        {node.betweennessCentrality.toFixed(6)}
+                      </CopyableCell>
+                    </td>
+                    <td className="p-2 align-middle">
+                      <button
+                        onClick={() => handleConnect(node)}
+                        disabled={
+                          connectingNode === node.pubKey ||
+                          !node.addresses ||
+                          node.addresses.length === 0
+                        }
+                        className="inline-flex items-center rounded-lg bg-sky-500 px-3 py-1 text-sm font-semibold text-white transition hover:bg-sky-500/80 disabled:cursor-not-allowed disabled:opacity-60"
+                        title={
+                          !node.addresses || node.addresses.length === 0
+                            ? t("peers.connectButton.noAddress")
+                            : t("peers.connectButton.connect")
+                        }
+                      >
+                        {connectingNode === node.pubKey ? (
+                          <>
+                            <Wifi size={16} className="mr-1 animate-pulse" />
+                            {t("peers.connectButton.connecting")}
+                          </>
+                        ) : (
+                          t("peers.connectButton.connect")
+                        )}
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {paginatedRecommendedNodes.length > 0 ? (
-                    paginatedRecommendedNodes.map((node) => (
-                      <tr
-                        key={node.pubKey}
-                        className="border-b border-gray-800/70 transition-colors hover:bg-gray-800/60 last:border-0"
-                      >
-                        <td
-                          className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
-                          title={node.alias || node.pubKey}
-                        >
-                          <CopyableCell
-                            fullText={node.alias || node.pubKey}
-                            copiedText={copiedText}
-                            onCopy={handleCopy}
-                          >
-                            {node.alias ||
-                              `${node.pubKey.substring(0, 10)}...${node.pubKey.substring(
-                                node.pubKey.length - 4
-                              )}`}
-                          </CopyableCell>
-                        </td>
-                        <td className="p-2 align-middle hidden md:table-cell">
-                          <CopyableCell
-                            fullText={String(node.numChannels)}
-                            copiedText={copiedText}
-                            onCopy={handleCopy}
-                          >
-                            {node.numChannels}
-                          </CopyableCell>
-                        </td>
-                        <td className="p-2 align-middle hidden lg:table-cell">
-                          <CopyableCell
-                            fullText={node.capacity.toLocaleString()}
-                            copiedText={copiedText}
-                            onCopy={handleCopy}
-                          >
-                            {node.capacity.toLocaleString()}{" "}
-                            <span className="text-xs text-gray-400">sats</span>
-                          </CopyableCell>
-                        </td>
-                        <td className="p-2 align-middle hidden lg:table-cell">
-                          <CopyableCell
-                            fullText={node.betweennessCentrality.toFixed(6)}
-                            copiedText={copiedText}
-                            onCopy={handleCopy}
-                          >
-                            {node.betweennessCentrality.toFixed(6)}
-                          </CopyableCell>
-                        </td>
-                        <td className="p-2 align-middle">
-                          <button
-                            onClick={() => handleConnect(node)}
-                            disabled={
-                              connectingNode === node.pubKey ||
-                              !node.addresses ||
-                              node.addresses.length === 0
-                            }
-                            className="inline-flex items-center rounded-lg bg-sky-500 px-3 py-1 text-sm font-semibold text-white transition hover:bg-sky-500/80 disabled:cursor-not-allowed disabled:opacity-60"
-                            title={
-                              !node.addresses || node.addresses.length === 0
-                                ? "Node has no advertised address"
-                                : "Connect"
-                            }
-                          >
-                            {connectingNode === node.pubKey ? (
-                              <>
-                                <Wifi
-                                  size={16}
-                                  className="mr-1 animate-pulse"
-                                />
-                                Connecting...
-                              </>
-                            ) : (
-                              "Connect"
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="p-8 text-center text-sm text-gray-500"
-                      >
-                        {searchTerm
-                          ? `No recommended peers match "${searchTerm}".`
-                          : "No recommended peers found or all are already connected."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1 || totalPages === 0}
-                className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronLeft size={16} className="mr-1" />
-                Previous
-              </button>
-              <span className="text-gray-400">
-                Page {totalPages > 0 ? currentPage : 0} of {totalPages}
-              </span>
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
-                <ChevronRight size={16} className="ml-1" />
-              </button>
-            </div>
-          </>
-        )}
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="p-8 text-center text-sm text-gray-500"
+                  >
+                    {searchTerm
+                      ? t("peers.tables.emptySearch", { query: searchTerm })
+                      : t("peers.tables.empty")}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1 || totalPages === 0}
+            className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <ChevronLeft size={16} className="mr-1" />
+            {t("channels.pagination.previous")}
+          </button>
+          <span className="text-gray-400">
+            {t("channels.pagination.pageOf", {
+              current: totalPages > 0 ? currentPage : 0,
+              total: totalPages,
+            })}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t("channels.pagination.next")}
+            <ChevronRight size={16} className="ml-1" />
+          </button>
+        </div>
       </div>
-
     </main>
   );
 };
+

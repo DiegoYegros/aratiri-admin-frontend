@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChannelsDashboard } from "./components/channels/ChannelsDashboard";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { Dashboard } from "./components/dashboard/Dashboard";
@@ -8,6 +9,15 @@ import { MobileNav } from "./components/layout/MobileNav";
 import { PeersDashboard } from "./components/peers/PeersDashboard";
 import { WalletDashboard } from "./components/wallet/WalletDashboard";
 import { apiCall } from "./lib/api";
+import { LanguageProvider, useLanguage } from "./lib/language";
+import { SettingsView } from "./components/settings/SettingsView";
+
+type ViewKey = "dashboard" | "wallet" | "channels" | "peers" | "settings";
+
+type StoredAuthErrorKey =
+  | "auth.errors.noPermission"
+  | "auth.errors.sessionExpired"
+  | null;
 
 const decodeJwt = (token: string): { exp: number } | null => {
   try {
@@ -16,9 +26,7 @@ const decodeJwt = (token: string): { exp: number } | null => {
     const jsonPayload = decodeURIComponent(
       atob(base64)
         .split("")
-        .map(function (c) {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        })
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
         .join("")
     );
     return JSON.parse(jsonPayload);
@@ -27,14 +35,15 @@ const decodeJwt = (token: string): { exp: number } | null => {
   }
 };
 
-export default function AdminApp() {
-  const [token, setToken] = useState<string | null>(null);
+const AdminAppContent = () => {
+  const { t } = useLanguage();
+  const [, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeView, setActiveView] = useState("dashboard");
+  const [activeView, setActiveView] = useState<ViewKey>("dashboard");
   const [refreshKey, setRefreshKey] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [authErrorKey, setAuthErrorKey] = useState<StoredAuthErrorKey>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -69,7 +78,7 @@ export default function AdminApp() {
           }
           setToken(storedToken);
           setIsAuthenticated(true);
-          setAuthError(null);
+          setAuthErrorKey(null);
         } else {
           localStorage.removeItem("aratiri_accessToken");
           localStorage.removeItem("aratiri_refreshToken");
@@ -78,7 +87,7 @@ export default function AdminApp() {
           }
           setToken(null);
           setIsAuthenticated(false);
-          setAuthError("You do not have permission to access the admin dashboard.");
+          setAuthErrorKey("auth.errors.noPermission");
         }
       } catch {
         localStorage.removeItem("aratiri_accessToken");
@@ -88,7 +97,7 @@ export default function AdminApp() {
         }
         setToken(null);
         setIsAuthenticated(false);
-        setAuthError("Session expired. Please sign in again.");
+        setAuthErrorKey("auth.errors.sessionExpired");
       } finally {
         if (isMounted) {
           setIsCheckingAuth(false);
@@ -103,7 +112,7 @@ export default function AdminApp() {
       localStorage.removeItem("aratiri_refreshToken");
       setToken(null);
       setIsAuthenticated(false);
-      setAuthError(null);
+      setAuthErrorKey(null);
       setIsCheckingAuth(false);
     };
 
@@ -120,7 +129,7 @@ export default function AdminApp() {
     localStorage.removeItem("aratiri_refreshToken");
     setToken(null);
     setIsAuthenticated(false);
-    setAuthError(null);
+    setAuthErrorKey(null);
     setIsMobileMenuOpen(false);
   };
 
@@ -136,19 +145,19 @@ export default function AdminApp() {
   }, [isRefreshing]);
 
   const toggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
+    setIsSidebarCollapsed((prev) => !prev);
   };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen((prev) => !prev);
   };
 
-  const handleMobileNavigate = (view: string) => {
+  const handleMobileNavigate = (view: ViewKey) => {
     setActiveView(view);
     setIsMobileMenuOpen(false);
   };
 
-  const renderActiveView = () => {
+  const activeViewContent = useMemo(() => {
     switch (activeView) {
       case "dashboard":
         return <Dashboard refreshKey={refreshKey} />;
@@ -158,15 +167,17 @@ export default function AdminApp() {
         return <ChannelsDashboard />;
       case "peers":
         return <PeersDashboard />;
+      case "settings":
+        return <SettingsView />;
       default:
         return <Dashboard refreshKey={refreshKey} />;
     }
-  };
+  }, [activeView, refreshKey]);
 
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center font-sans">
-        <p className="text-gray-300 text-lg">Loading...</p>
+        <p className="text-gray-300 text-lg">{t("admin.loading")}</p>
       </div>
     );
   }
@@ -180,7 +191,7 @@ export default function AdminApp() {
           onLogout={handleLogout}
           activeView={activeView}
           onNavigate={(view) => {
-            setActiveView(view);
+            setActiveView(view as ViewKey);
             setIsMobileMenuOpen(false);
           }}
           isSidebarCollapsed={isSidebarCollapsed}
@@ -197,19 +208,32 @@ export default function AdminApp() {
             onToggleMenu={toggleMobileMenu}
           />
           <div className="flex-1 overflow-y-auto pt-[4.5rem] sm:pt-0">
-            {renderActiveView()}
+            {activeViewContent}
           </div>
         </div>
       </div>
     );
   }
 
+  const authErrorMessage = authErrorKey ? t(authErrorKey) : null;
+
   return (
     <LoginScreen
       setToken={setToken}
       setIsAuthenticated={setIsAuthenticated}
-      authError={authError}
-      onClearAuthError={() => setAuthError(null)}
+      authError={authErrorMessage}
+      onClearAuthError={() => setAuthErrorKey(null)}
     />
   );
-}
+};
+
+const AdminApp = () => {
+  return (
+    <LanguageProvider>
+      <AdminAppContent />
+    </LanguageProvider>
+  );
+};
+
+export default AdminApp;
+

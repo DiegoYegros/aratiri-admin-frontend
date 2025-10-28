@@ -2,6 +2,7 @@
 import { Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiCall } from "../../lib/api";
+import { useLanguage } from "@/app/lib/language";
 
 export const LoginScreen = ({
   setToken,
@@ -14,6 +15,7 @@ export const LoginScreen = ({
   authError?: string | null;
   onClearAuthError?: () => void;
 }) => {
+  const { t } = useLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,7 +44,7 @@ export const LoginScreen = ({
       if (role !== "ADMIN" && role !== "SUPERADMIN") {
         localStorage.removeItem("aratiri_accessToken");
         localStorage.removeItem("aratiri_refreshToken");
-        throw new Error("You do not have permission to access the admin dashboard.");
+        throw new Error(t("auth.errors.noPermission"));
       }
       setToken(response.accessToken);
       setIsAuthenticated(true);
@@ -54,7 +56,7 @@ export const LoginScreen = ({
       const message =
         err instanceof Error && err.message
           ? err.message
-          : "Unable to sign in. Please try again.";
+          : t("auth.errors.default");
       setError(message);
     } finally {
       setLoading(false);
@@ -66,8 +68,8 @@ export const LoginScreen = ({
       <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-8 space-y-6 border border-yellow-500/20">
         <div className="text-center">
           <Server className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-glow" />
-          <h1 className="text-4xl font-bold">Aratiri Admin</h1>
-          <p className="text-gray-400">Sign in to continue</p>
+          <h1 className="text-4xl font-bold">{t("auth.heading")}</h1>
+          <p className="text-gray-400">{t("auth.subheading")}</p>
         </div>
 
         {error && (
@@ -81,7 +83,7 @@ export const LoginScreen = ({
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Username"
+            placeholder={t("auth.usernamePlaceholder")}
             className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             required
           />
@@ -89,7 +91,7 @@ export const LoginScreen = ({
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder={t("auth.passwordPlaceholder")}
             className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             required
           />
@@ -98,10 +100,11 @@ export const LoginScreen = ({
             disabled={loading}
             className="w-full bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-lg hover:bg-yellow-500 disabled:opacity-50 transition"
           >
-            {loading ? "Signing In..." : "Sign In"}
+            {loading ? t("auth.signingIn") : t("auth.signIn")}
           </button>
         </form>
       </div>
     </div>
   );
 };
+

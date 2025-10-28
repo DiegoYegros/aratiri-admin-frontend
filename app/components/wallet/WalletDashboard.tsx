@@ -18,6 +18,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { StatCard } from "../ui/StatCard";
+import { useLanguage } from "@/app/lib/language";
 
 interface WalletBalance {
   confirmed: number;
@@ -25,6 +26,7 @@ interface WalletBalance {
 }
 
 export const WalletDashboard = () => {
+  const { t } = useLanguage();
   const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -51,8 +53,8 @@ export const WalletDashboard = () => {
           unconfirmed: response.unconfirmed_balance,
         });
       } catch (err: any) {
-        const message =
-          err?.message || "Failed to load wallet balance. Please try again.";
+        const fallback = t("wallet.errors.fetchBalance");
+        const message = err?.message ? `${fallback} ${err.message}` : fallback;
         setError(message);
       } finally {
         if (showSpinner) {
@@ -62,7 +64,7 @@ export const WalletDashboard = () => {
         }
       }
     },
-    []
+    [t]
   );
 
   useEffect(() => {
@@ -89,10 +91,11 @@ export const WalletDashboard = () => {
       );
       setLatestAddress(response.address);
       setCopyStatus("idle");
+      setSuccessMessage(t("wallet.alerts.success"));
       await fetchBalance();
     } catch (err: any) {
-      const message =
-        err?.message || "Failed to generate a new address. Please try again.";
+      const fallback = t("wallet.errors.generateAddress");
+      const message = err?.message ? `${fallback} ${err.message}` : fallback;
       setError(message);
     } finally {
       setIsGenerating(false);
@@ -145,22 +148,22 @@ export const WalletDashboard = () => {
       {balance && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
-            title="Confirmed Balance"
+            title={t("wallet.stats.confirmed")}
             value={formatSats(balance.confirmed)}
             icon={Wallet}
-            unit="sats"
+            unit={t("common.sats")}
           />
           <StatCard
-            title="Unconfirmed Balance"
+            title={t("wallet.stats.unconfirmed")}
             value={formatSats(balance.unconfirmed)}
             icon={Hourglass}
-            unit="sats"
+            unit={t("common.sats")}
           />
           <StatCard
-            title="Total Balance"
+            title={t("wallet.stats.total")}
             value={formatSats(totalBalance)}
             icon={Coins}
-            unit="sats"
+            unit={t("common.sats")}
           />
         </div>
       )}
@@ -168,10 +171,9 @@ export const WalletDashboard = () => {
       <section className="bg-gray-800 border border-gray-700 rounded-lg p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-xl font-semibold">On-chain Wallet</h2>
+            <h2 className="text-xl font-semibold">{t("wallet.section.title")}</h2>
             <p className="text-sm text-gray-400">
-              Generate addresses and monitor your on-chain wallet
-              balances.
+              {t("wallet.section.description")}
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
@@ -185,7 +187,7 @@ export const WalletDashboard = () => {
               ) : (
                 <RefreshCcw className="mr-2 h-4 w-4" />
               )}
-              Refresh
+              {t("wallet.actions.refresh")}
             </button>
             <button
               onClick={handleGenerateAddress}
@@ -197,14 +199,18 @@ export const WalletDashboard = () => {
               ) : (
                 <PlusCircle className="mr-2 h-4 w-4" />
               )}
-              {isGenerating ? "Generating" : "Generate Address"}
+              {isGenerating
+                ? t("wallet.actions.generating")
+                : t("wallet.actions.generate")}
             </button>
           </div>
         </div>
 
         {latestAddress && (
           <div className="mt-6">
-            <p className="text-sm text-gray-400">Latest generated address</p>
+            <p className="text-sm text-gray-400">
+              {t("wallet.section.latestAddress")}
+            </p>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
               <code className="flex-1 truncate rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-yellow-100">
                 {latestAddress}
@@ -218,7 +224,9 @@ export const WalletDashboard = () => {
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
-                {copyStatus === "copied" ? "Copied" : "Copy"}
+                {copyStatus === "copied"
+                  ? t("common.copied")
+                  : t("common.copy")}
               </button>
             </div>
           </div>
@@ -227,3 +235,4 @@ export const WalletDashboard = () => {
     </main>
   );
 };
+

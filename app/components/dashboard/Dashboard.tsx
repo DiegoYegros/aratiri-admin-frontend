@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "../ui/StatCard";
 import { LiquidityPieChart } from "../charts/LiquidityPieChart";
 import { TransactionLineChart } from "../charts/TransactionLineChart";
+import { useLanguage } from "@/app/lib/language";
 
 interface ChannelBalance {
   localBalance: number;
@@ -21,6 +22,7 @@ interface ChannelBalance {
 }
 
 export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
+  const { t } = useLanguage();
   const [nodeInfo, setNodeInfo] = useState<NodeInfo | null>(null);
   const [channelBalance, setChannelBalance] = useState<ChannelBalance | null>(
     null
@@ -52,9 +54,11 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
       });
       setTransactionStats(statsData.stats);
     } catch (err: any) {
-      setError("Failed to fetch dashboard data: " + err.message);
+      setError(
+        t("dashboard.errors.fetch", { message: err?.message || "" })
+      );
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (refreshKey === 0) {
@@ -82,39 +86,48 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
       )}
 
       {nodeInfo && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard title="Alias" value={nodeInfo.alias} icon={Info} />
-            <StatCard title="Version" value={nodeInfo.version} icon={Package} />
-            <StatCard
-              title="Block Height"
-              value={nodeInfo.blockHeight.toLocaleString()}
-              icon={Hash}
-            />
-            <StatCard
-              title="Commit Hash"
-              value={nodeInfo.commitHash}
-              icon={GitCommit}
-            />
-            <StatCard title="Peers" value={nodeInfo.numPeers} icon={Users} />
-            <StatCard
-              title="Active Channels"
-              value={nodeInfo.numActiveChannels}
-              icon={Link2}
-            />
-            <StatCard
-              title="Pending Channels"
-              value={nodeInfo.numPendingChannels}
-              icon={Link2}
-            />
-            <StatCard
-              title="Network"
-              value={nodeInfo.chains[0]?.network || "N/A"}
-              icon={Network}
-            />
-          </div>
-
-        </>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title={t("dashboard.stats.alias")}
+            value={nodeInfo.alias}
+            icon={Info}
+          />
+          <StatCard
+            title={t("dashboard.stats.version")}
+            value={nodeInfo.version}
+            icon={Package}
+          />
+          <StatCard
+            title={t("dashboard.stats.blockHeight")}
+            value={nodeInfo.blockHeight.toLocaleString()}
+            icon={Hash}
+          />
+          <StatCard
+            title={t("dashboard.stats.commitHash")}
+            value={nodeInfo.commitHash}
+            icon={GitCommit}
+          />
+          <StatCard
+            title={t("dashboard.stats.peers")}
+            value={nodeInfo.numPeers}
+            icon={Users}
+          />
+          <StatCard
+            title={t("dashboard.stats.activeChannels")}
+            value={nodeInfo.numActiveChannels}
+            icon={Link2}
+          />
+          <StatCard
+            title={t("dashboard.stats.pendingChannels")}
+            value={nodeInfo.numPendingChannels}
+            icon={Link2}
+          />
+          <StatCard
+            title={t("dashboard.stats.network")}
+            value={nodeInfo.chains[0]?.network || t("common.notAvailable")}
+            icon={Network}
+          />
+        </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -126,3 +139,4 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
     </main>
   );
 };
+

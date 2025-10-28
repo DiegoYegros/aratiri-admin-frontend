@@ -25,6 +25,7 @@ import { OpenChannelModal } from "./OpenChannelModal";
 import { StatCard } from "../ui/StatCard";
 import { CopyableCell } from "../ui/CopyableCell";
 import { ChannelLiquidityChart } from "../charts/ChannelLiquidityChart";
+import { useLanguage } from "@/app/lib/language";
 
 type ChannelStatusType =
   | "active"
@@ -40,54 +41,12 @@ interface UnifiedChannel {
   capacity: number;
   localBalance: number;
   remoteBalance: number;
-  active: boolean; 
+  active: boolean;
   privateChannel: boolean;
   status: ChannelStatusType;
 }
 
 const ITEMS_PER_PAGE = 10;
-
-const CHANNEL_STATUS_META: Record<
-  ChannelStatusType,
-  {
-    label: string;
-    icon: LucideIcon;
-    chipClass: string;
-  }
-> = {
-  active: {
-    label: "Active",
-    icon: CheckCircle,
-    chipClass:
-      "bg-emerald-500/10 text-emerald-200 ring-1 ring-emerald-500/30",
-  },
-  inactive: {
-    label: "Inactive",
-    icon: XCircle,
-    chipClass: "bg-rose-500/10 text-rose-200 ring-1 ring-rose-500/30",
-  },
-  pending_open: {
-    label: "Pending Open",
-    icon: Clock,
-    chipClass: "bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30",
-  },
-  pending_closing: {
-    label: "Pending Close",
-    icon: Hourglass,
-    chipClass: "bg-blue-500/10 text-blue-200 ring-1 ring-blue-500/30",
-  },
-  pending_force_closing: {
-    label: "Force Closing",
-    icon: AlertTriangle,
-    chipClass:
-      "bg-orange-500/10 text-orange-200 ring-1 ring-orange-500/30",
-  },
-  waiting_close: {
-    label: "Waiting Close",
-    icon: PauseCircle,
-    chipClass: "bg-indigo-500/10 text-indigo-200 ring-1 ring-indigo-500/30",
-  },
-};
 
 const formatPubkeyLabel = (pubkey: string) => {
   if (!pubkey || pubkey === "N/A") return "N/A";
@@ -95,6 +54,7 @@ const formatPubkeyLabel = (pubkey: string) => {
 };
 
 export const ChannelsDashboard = () => {
+  const { t } = useLanguage();
   const [channels, setChannels] = useState<UnifiedChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -103,6 +63,45 @@ export const ChannelsDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
+  const statusMeta = useMemo(
+    () =>
+      ({
+        active: {
+          label: t("statuses.active"),
+          icon: CheckCircle,
+          chipClass:
+            "bg-emerald-500/10 text-emerald-200 ring-1 ring-emerald-500/30",
+        },
+        inactive: {
+          label: t("statuses.inactive"),
+          icon: XCircle,
+          chipClass: "bg-rose-500/10 text-rose-200 ring-1 ring-rose-500/30",
+        },
+        pending_open: {
+          label: t("statuses.pending_open"),
+          icon: Clock,
+          chipClass: "bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30",
+        },
+        pending_closing: {
+          label: t("statuses.pending_closing"),
+          icon: Hourglass,
+          chipClass: "bg-blue-500/10 text-blue-200 ring-1 ring-blue-500/30",
+        },
+        pending_force_closing: {
+          label: t("statuses.pending_force_closing"),
+          icon: AlertTriangle,
+          chipClass:
+            "bg-orange-500/10 text-orange-200 ring-1 ring-orange-500/30",
+        },
+        waiting_close: {
+          label: t("statuses.waiting_close"),
+          icon: PauseCircle,
+          chipClass: "bg-indigo-500/10 text-indigo-200 ring-1 ring-indigo-500/30",
+        },
+      } satisfies Record<ChannelStatusType, { label: string; icon: LucideIcon; chipClass: string }>),
+    [t]
+  );
+
   const ChannelStatusBadge = ({
     status,
     count,
@@ -110,7 +109,7 @@ export const ChannelsDashboard = () => {
     status: UnifiedChannel["status"];
     count?: number;
   }) => {
-    const meta = CHANNEL_STATUS_META[status];
+    const meta = statusMeta[status];
     if (!meta) return null;
     const StatusIcon = meta.icon;
     return (
@@ -137,14 +136,16 @@ export const ChannelsDashboard = () => {
             ? "bg-purple-500/10 text-purple-200 ring-1 ring-purple-500/30"
             : "bg-sky-500/10 text-sky-200 ring-1 ring-sky-500/30"
         }`}
-        title={isPrivate ? "Private Channel" : "Public Channel"}
+        title={
+          isPrivate ? t("channels.types.privateTooltip") : t("channels.types.publicTooltip")
+        }
       >
         {isPrivate ? (
           <Lock size={14} className="text-purple-300" />
         ) : (
           <Globe size={14} className="text-sky-300" />
         )}
-        {isPrivate ? "Private" : "Public"}
+        {isPrivate ? t("channels.types.private") : t("channels.types.public")}
       </span>
     );
   };
@@ -204,11 +205,11 @@ export const ChannelsDashboard = () => {
         ...waitingClose,
       ]);
     } catch (err: any) {
-      setError("Failed to fetch open channels: " + err.message);
+      setError(t("channels.errors.fetch", { message: err?.message || "" }));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchData();
@@ -352,7 +353,7 @@ export const ChannelsDashboard = () => {
       const total = aggregated.outbound + aggregated.inbound || 1;
 
       topData.push({
-        name: "Others",
+        name: t("channels.chart.others"),
         outbound: aggregated.outbound,
         inbound: aggregated.inbound,
         total,
@@ -360,7 +361,7 @@ export const ChannelsDashboard = () => {
     }
 
     return topData;
-  }, [channels]);
+  }, [channels, t]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -379,9 +380,11 @@ export const ChannelsDashboard = () => {
       <div className="mb-8 rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-900/90 via-gray-900 to-gray-800 px-6 py-6 shadow-lg">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-3xl font-semibold tracking-tight">Channels</h2>
+            <h2 className="text-3xl font-semibold tracking-tight">
+              {t("channels.title")}
+            </h2>
             <p className="mt-1 text-sm text-gray-400">
-              Monitor liquidity, channel health, and privacy posture at a glance.
+              {t("channels.subtitle")}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -391,39 +394,41 @@ export const ChannelsDashboard = () => {
               className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow hover:bg-gray-800 transition focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-60"
             >
               <Zap
-                className={`h-4 w-4 ${loading ? "animate-spin text-yellow-300" : "text-yellow-400"}`}
+                className={`h-4 w-4 ${
+                  loading ? "animate-spin text-yellow-300" : "text-yellow-400"
+                }`}
               />
-              Refresh
+              {t("channels.actions.refresh")}
             </button>
             <button
               onClick={() => setIsModalOpen(true)}
               className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-400 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:from-emerald-400 hover:to-green-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
             >
               <PlusCircle className="h-5 w-5" />
-              Open Channel
+              {t("channels.actions.open")}
             </button>
           </div>
         </div>
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Outbound Liquidity"
+            title={t("channels.stats.outbound")}
             value={totalLocal.toLocaleString()}
-            unit="sats"
+            unit={t("common.sats")}
             icon={ArrowUpRight}
           />
           <StatCard
-            title="Inbound Liquidity"
+            title={t("channels.stats.inbound")}
             value={totalRemote.toLocaleString()}
-            unit="sats"
+            unit={t("common.sats")}
             icon={ArrowDownLeft}
           />
           <StatCard
-            title="Active Channels"
+            title={t("channels.stats.active")}
             value={activeCount}
             icon={Activity}
           />
           <StatCard
-            title="Inactive / Pending"
+            title={t("channels.stats.pending")}
             value={pendingCount}
             icon={AlertTriangle}
           />
@@ -440,7 +445,7 @@ export const ChannelsDashboard = () => {
             ))}
           {channels.length === 0 && (
             <span className="text-xs uppercase tracking-wide text-gray-500">
-              No channels yet
+              {t("channels.status.none")}
             </span>
           )}
         </div>
@@ -459,39 +464,44 @@ export const ChannelsDashboard = () => {
         <div className="flex h-full flex-col rounded-lg border border-gray-700 bg-gray-800/80 p-5">
           <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
             <BarChart3 className="h-5 w-5 text-emerald-400" />
-            Channel Snapshot
+            {t("channels.stats.snapshot")}
           </div>
           <dl className="space-y-3 text-sm text-gray-300">
             <div className="flex items-center justify-between">
-              <dt>Total Capacity</dt>
+              <dt>{t("channels.stats.totalCapacity")}</dt>
               <dd className="font-semibold text-white">
-                {totalCapacity.toLocaleString()} sats
+                {totalCapacity.toLocaleString()} {t("common.sats")}
               </dd>
             </div>
             <div className="flex items-center justify-between">
-              <dt>Avg. Active Size</dt>
+              <dt>{t("channels.stats.averageActiveSize")}</dt>
               <dd className="font-semibold text-white">
-                {averageActiveSize ? averageActiveSize.toLocaleString(undefined, { maximumFractionDigits: 0 }) : "0"} sats
+                {averageActiveSize
+                  ? averageActiveSize.toLocaleString(undefined, {
+                      maximumFractionDigits: 0,
+                    })
+                  : "0"}{" "}
+                {t("common.sats")}
               </dd>
             </div>
             <div className="flex items-center justify-between">
-              <dt>Active Utilization</dt>
+              <dt>{t("channels.stats.activeUtilization")}</dt>
               <dd className="font-semibold text-white">
                 {activeUtilization.toFixed(1)}%
               </dd>
             </div>
             <div className="flex items-center justify-between">
-              <dt>Public Channels</dt>
+              <dt>{t("channels.stats.publicChannels")}</dt>
               <dd className="font-semibold text-white">{publicCount}</dd>
             </div>
             <div className="flex items-center justify-between">
-              <dt>Private Channels</dt>
+              <dt>{t("channels.stats.privateChannels")}</dt>
               <dd className="font-semibold text-white">{privateCount}</dd>
             </div>
           </dl>
           {channels.length === 0 && (
             <p className="mt-6 text-xs text-gray-500">
-              Open a channel to populate analytics.
+              {t("channels.stats.empty")}
             </p>
           )}
         </div>
@@ -499,7 +509,7 @@ export const ChannelsDashboard = () => {
 
       <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">Channel List</h3>
+          <h3 className="text-lg font-bold">{t("channels.table.title")}</h3>
           <div className="relative w-full max-w-xs">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -507,7 +517,7 @@ export const ChannelsDashboard = () => {
             />
             <input
               type="text"
-              placeholder="Search by remote pubkey..."
+              placeholder={t("channels.table.search")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full rounded-lg border border-gray-700 bg-gray-900/60 pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:border-transparent"
@@ -524,18 +534,18 @@ export const ChannelsDashboard = () => {
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
-                    <th className="p-2 font-semibold">Status</th>
-                    <th className="p-2 font-semibold">Remote Peer</th>
+                    <th className="p-2 font-semibold">{t("channels.table.status")}</th>
+                    <th className="p-2 font-semibold">{t("channels.table.remotePeer")}</th>
                     <th className="p-2 font-semibold hidden md:table-cell">
-                      Local Balance
+                      {t("channels.table.localBalance")}
                     </th>
                     <th className="p-2 font-semibold hidden md:table-cell">
-                      Remote Balance
+                      {t("channels.table.remoteBalance")}
                     </th>
                     <th className="p-2 font-semibold hidden lg:table-cell">
-                      Capacity
+                      {t("channels.table.capacity")}
                     </th>
-                    <th className="p-2 font-semibold">Type</th>
+                    <th className="p-2 font-semibold">{t("channels.table.type")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -569,7 +579,9 @@ export const ChannelsDashboard = () => {
                             <span className="font-semibold text-emerald-200">
                               {channel.localBalance.toLocaleString()}
                             </span>{" "}
-                            <span className="text-xs text-gray-400">sats</span>
+                            <span className="text-xs text-gray-400">
+                              {t("common.sats")}
+                            </span>
                           </CopyableCell>
                         </td>
                         <td className="p-2 align-middle hidden md:table-cell">
@@ -581,7 +593,9 @@ export const ChannelsDashboard = () => {
                             <span className="font-semibold text-blue-200">
                               {channel.remoteBalance.toLocaleString()}
                             </span>{" "}
-                            <span className="text-xs text-gray-400">sats</span>
+                            <span className="text-xs text-gray-400">
+                              {t("common.sats")}
+                            </span>
                           </CopyableCell>
                         </td>
                         <td className="p-2 align-middle hidden lg:table-cell">
@@ -590,8 +604,7 @@ export const ChannelsDashboard = () => {
                             copiedText={copiedText}
                             onCopy={handleCopy}
                           >
-                            {channel.capacity.toLocaleString()}{" "}
-                            <span className="text-xs text-gray-400">sats</span>
+                            {channel.capacity.toLocaleString()} {t("common.sats")}
                           </CopyableCell>
                         </td>
                         <td className="p-2 align-middle">
@@ -606,8 +619,8 @@ export const ChannelsDashboard = () => {
                         className="p-8 text-center text-sm text-gray-500"
                       >
                         {searchTerm
-                          ? `No channels match "${searchTerm}".`
-                          : "You have no channels yet."}
+                          ? t("channels.table.emptySearch", { query: searchTerm })
+                          : t("channels.table.empty")}
                       </td>
                     </tr>
                   )}
@@ -621,10 +634,13 @@ export const ChannelsDashboard = () => {
                 className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft size={16} className="mr-1" />
-                Previous
+                {t("channels.pagination.previous")}
               </button>
               <span className="text-gray-400">
-                Page {totalPages > 0 ? currentPage : 0} of {totalPages}
+                {t("channels.pagination.pageOf", {
+                  current: totalPages > 0 ? currentPage : 0,
+                  total: totalPages,
+                })}
               </span>
               <button
                 onClick={() =>
@@ -633,7 +649,7 @@ export const ChannelsDashboard = () => {
                 disabled={currentPage === totalPages || totalPages === 0}
                 className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Next
+                {t("channels.pagination.next")}
                 <ChevronRight size={16} className="ml-1" />
               </button>
             </div>
@@ -643,3 +659,4 @@ export const ChannelsDashboard = () => {
     </main>
   );
 };
+

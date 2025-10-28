@@ -2,6 +2,7 @@
 
 import { Check, ClipboardCopy, LucideIcon } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "@/app/lib/language";
 
 interface StatCardProps {
   title: string;
@@ -11,6 +12,7 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ title, value, icon: Icon, unit }: StatCardProps) => {
+  const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -46,7 +48,7 @@ export const StatCard = ({ title, value, icon: Icon, unit }: StatCardProps) => {
             <button
               onClick={toggleExpansion}
               className="text-yellow-400 hover:text-yellow-300 ml-1"
-              title="Expand"
+              title={t("statCard.expand")}
             >
               ...
             </button>
@@ -58,7 +60,7 @@ export const StatCard = ({ title, value, icon: Icon, unit }: StatCardProps) => {
               isLong ? "break-all cursor-pointer" : ""
             }`}
             onClick={isLong ? toggleExpansion : undefined}
-            title={isLong ? "Click to collapse" : ""}
+            title={isLong ? t("statCard.collapse") : ""}
           >
             {displayValue}
             {unit && <span className="text-lg ml-1 text-gray-400">{unit}</span>}
@@ -68,7 +70,7 @@ export const StatCard = ({ title, value, icon: Icon, unit }: StatCardProps) => {
       <button
         onClick={handleCopy}
         className="absolute top-2 right-2 p-1 bg-gray-700 rounded-md text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity"
-        title="Copy to clipboard"
+        title={t("statCard.copy")}
       >
         {copied ? (
           <Check size={16} className="text-green-500" />
@@ -79,3 +81,4 @@ export const StatCard = ({ title, value, icon: Icon, unit }: StatCardProps) => {
     </div>
   );
 };
+

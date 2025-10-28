@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { apiCall } from "@/app/lib/api";
 import { X, Zap } from "lucide-react";
+import { useLanguage } from "@/app/lib/language";
 
 interface RemoteNode {
   pubKey: string;
@@ -19,6 +20,7 @@ export const OpenChannelModal = ({
   onClose,
   onSuccess,
 }: OpenChannelModalProps) => {
+  const { t } = useLanguage();
   const [nodePubkey, setNodePubkey] = useState(node?.pubKey || "");
   const [localFundingAmount, setLocalFundingAmount] = useState("");
   const [pushSat, setPushSat] = useState("0");
@@ -42,7 +44,7 @@ export const OpenChannelModal = ({
           privateChannel,
         }),
       });
-      setSuccess(`Channel opening process initiated! TXID: ${response}`);
+      setSuccess(t("modal.openChannel.success", { txid: response }));
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -60,12 +62,13 @@ export const OpenChannelModal = ({
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white"
+          aria-label={t("common.collapse")}
         >
           <X size={24} />
         </button>
-        <h2 className="text-2xl font-bold mb-2">Open a New Channel</h2>
+        <h2 className="text-2xl font-bold mb-2">{t("modal.openChannel.title")}</h2>
         <p className="text-gray-400 mb-6">
-          Connect with a new peer to expand your reach on the network.
+          {t("modal.openChannel.description")}
         </p>
 
         {error && (
@@ -82,46 +85,46 @@ export const OpenChannelModal = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-400 mb-1">
-              Node Public Key
+              {t("modal.openChannel.nodePublicKey")}
             </label>
             <input
               type="text"
               value={nodePubkey}
               onChange={(e) => setNodePubkey(e.target.value)}
-              placeholder="02f... or 03a..."
+              placeholder="02f..."
               className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
               required
               readOnly={!!node?.pubKey}
             />
             {node && (
               <p className="text-xs text-gray-500 mt-1">
-                Opening channel with {node.alias}
+                {t("modal.openChannel.openingWith", { alias: node.alias })}
               </p>
             )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
-                Local Amount (sats)
+                {t("modal.openChannel.localAmount")}
               </label>
               <input
                 type="number"
                 value={localFundingAmount}
                 onChange={(e) => setLocalFundingAmount(e.target.value)}
-                placeholder="e.g., 1000000"
+                placeholder="1000000"
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-400 mb-1">
-                Push to Peer (sats)
+                {t("modal.openChannel.pushToPeer")}
               </label>
               <input
                 type="number"
                 value={pushSat}
                 onChange={(e) => setPushSat(e.target.value)}
-                placeholder="Optional"
+                placeholder={t("modal.openChannel.optional")}
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
             </div>
@@ -138,7 +141,7 @@ export const OpenChannelModal = ({
               htmlFor="private-channel"
               className="ml-2 block text-sm text-gray-300"
             >
-              Make this a private channel
+              {t("modal.openChannel.privateLabel")}
             </label>
           </div>
           <div className="pt-4">
@@ -150,10 +153,10 @@ export const OpenChannelModal = ({
               {loading ? (
                 <>
                   <Zap className="w-5 h-5 mr-2 animate-spin" />
-                  Opening Channel...
+                  {t("modal.openChannel.submitting")}
                 </>
               ) : (
-                "Initiate Channel Open"
+                t("modal.openChannel.submit")
               )}
             </button>
           </div>
@@ -162,3 +165,4 @@ export const OpenChannelModal = ({
     </div>
   );
 };
+

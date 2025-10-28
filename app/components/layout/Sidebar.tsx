@@ -6,6 +6,7 @@ import {
   LogOut,
   Server,
   Users,
+  Wallet,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
@@ -82,6 +83,28 @@ export const Sidebar = ({
               >
                 Dashboard
               </span>
+            </button>
+          </li>
+          <li className="mt-2">
+            <button
+              onClick={() => onNavigate("wallet")}
+              className={`flex items-center w-full px-3 py-2 rounded-md ${
+                isSidebarCollapsed ? "justify-center" : ""
+              } ${
+                activeView === "wallet"
+                  ? "text-white bg-yellow-500/20"
+                  : "text-gray-400 hover:bg-gray-700/50"
+              }`}
+              title="Wallet"
+            >
+              <Wallet
+                className={`w-5 h-5 ${
+                  isSidebarCollapsed ? "" : "mr-3"
+                } ${
+                  activeView === "wallet" ? "text-yellow-400" : ""
+                }`}
+              />
+              <span className={isSidebarCollapsed ? "hidden" : ""}>Wallet</span>
             </button>
           </li>
           <li className="mt-2">

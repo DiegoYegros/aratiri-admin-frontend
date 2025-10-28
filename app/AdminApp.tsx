@@ -5,6 +5,7 @@ import { LoginScreen } from "./components/auth/LoginScreen";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { Sidebar } from "./components/layout/Sidebar";
 import { PeersDashboard } from "./components/peers/PeersDashboard";
+import { WalletDashboard } from "./components/wallet/WalletDashboard";
 import { apiCall } from "./lib/api";
 
 const decodeJwt = (token: string): { exp: number } | null => {
@@ -139,6 +140,8 @@ export default function AdminApp() {
     switch (activeView) {
       case "dashboard":
         return <Dashboard refreshKey={refreshKey} />;
+      case "wallet":
+        return <WalletDashboard />;
       case "channels":
         return <ChannelsDashboard />;
       case "peers":

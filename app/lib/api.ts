@@ -20,6 +20,15 @@ export interface TransactionStat {
   type: "credit" | "debit";
   count: number;
 }
+
+export interface WalletBalanceResponse {
+  confirmed_balance: number;
+  unconfirmed_balance: number;
+}
+
+export interface NewAddressResponse {
+  address: string;
+}
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:2100/v1";
 

@@ -4,6 +4,7 @@ import { ChannelsDashboard } from "./components/channels/ChannelsDashboard";
 import { LoginScreen } from "./components/auth/LoginScreen";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import { Sidebar } from "./components/layout/Sidebar";
+import { MobileNav } from "./components/layout/MobileNav";
 import { PeersDashboard } from "./components/peers/PeersDashboard";
 import { WalletDashboard } from "./components/wallet/WalletDashboard";
 import { apiCall } from "./lib/api";
@@ -35,6 +36,7 @@ export default function AdminApp() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -119,6 +121,7 @@ export default function AdminApp() {
     setToken(null);
     setIsAuthenticated(false);
     setAuthError(null);
+    setIsMobileMenuOpen(false);
   };
 
   const handleRefresh = useCallback(() => {
@@ -134,6 +137,15 @@ export default function AdminApp() {
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen((prev) => !prev);
+  };
+
+  const handleMobileNavigate = (view: string) => {
+    setActiveView(view);
+    setIsMobileMenuOpen(false);
   };
 
   const renderActiveView = () => {
@@ -167,12 +179,26 @@ export default function AdminApp() {
           onRefresh={handleRefresh}
           onLogout={handleLogout}
           activeView={activeView}
-          onNavigate={setActiveView}
+          onNavigate={(view) => {
+            setActiveView(view);
+            setIsMobileMenuOpen(false);
+          }}
           isSidebarCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
         />
-        <div className="flex-1 flex flex-col h-screen overflow-y-auto">
-          {renderActiveView()}
+        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+          <MobileNav
+            isRefreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            onLogout={handleLogout}
+            activeView={activeView}
+            onNavigate={handleMobileNavigate}
+            isMenuOpen={isMobileMenuOpen}
+            onToggleMenu={toggleMobileMenu}
+          />
+          <div className="flex-1 overflow-y-auto pt-[4.5rem] sm:pt-0">
+            {renderActiveView()}
+          </div>
         </div>
       </div>
     );

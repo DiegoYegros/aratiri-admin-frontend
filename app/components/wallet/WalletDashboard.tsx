@@ -89,7 +89,6 @@ export const WalletDashboard = () => {
       );
       setLatestAddress(response.address);
       setCopyStatus("idle");
-      setSuccessMessage("New address generated successfully.");
       await fetchBalance();
     } catch (err: any) {
       const message =

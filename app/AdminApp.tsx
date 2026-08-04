@@ -9,7 +9,7 @@ import { MobileNav } from "./components/layout/MobileNav";
 import { PeersDashboard } from "./components/peers/PeersDashboard";
 import { WalletDashboard } from "./components/wallet/WalletDashboard";
 import { apiCall } from "./lib/api";
-import { LanguageProvider, useLanguage } from "./lib/language";
+import { useLanguage } from "./lib/language";
 import { SettingsView } from "./components/settings/SettingsView";
 
 type ViewKey = "dashboard" | "wallet" | "channels" | "peers" | "settings";
@@ -152,8 +152,8 @@ const AdminAppContent = () => {
     setIsMobileMenuOpen((prev) => !prev);
   };
 
-  const handleMobileNavigate = (view: ViewKey) => {
-    setActiveView(view);
+  const handleMobileNavigate = (view: string) => {
+    setActiveView(view as ViewKey);
     setIsMobileMenuOpen(false);
   };
 
@@ -176,15 +176,15 @@ const AdminAppContent = () => {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center font-sans">
-        <p className="text-gray-300 text-lg">{t("admin.loading")}</p>
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center font-sans">
+        <p className="text-muted text-lg">{t("admin.loading")}</p>
       </div>
     );
   }
 
   if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white font-sans flex">
+      <div className="min-h-screen bg-background text-foreground font-sans flex">
         <Sidebar
           isRefreshing={isRefreshing}
           onRefresh={handleRefresh}
@@ -228,11 +228,7 @@ const AdminAppContent = () => {
 };
 
 const AdminApp = () => {
-  return (
-    <LanguageProvider>
-      <AdminAppContent />
-    </LanguageProvider>
-  );
+  return <AdminAppContent />;
 };
 
 export default AdminApp;

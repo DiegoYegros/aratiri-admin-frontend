@@ -18,7 +18,9 @@ import {
 import { OpenChannelModal } from "../channels/OpenChannelModal";
 import { CopyableCell } from "../ui/CopyableCell";
 import { StatCard } from "../ui/StatCard";
+import { Alert } from "../ui/Alert";
 import { useLanguage } from "@/app/lib/language";
+import { getLocale } from "@/app/lib/chartTheme";
 
 interface RemoteNode {
   pubKey: string;
@@ -37,7 +39,7 @@ interface Peer {
 const ITEMS_PER_PAGE = 10;
 
 export const PeersDashboard = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [recommendedNodes, setRecommendedNodes] = useState<RemoteNode[]>([]);
   const [connectedPeers, setConnectedPeers] = useState<Peer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +64,8 @@ export const PeersDashboard = () => {
   const [settingsError, setSettingsError] = useState("");
   const [updatingSettings, setUpdatingSettings] = useState(false);
 
+  const locale = getLocale(language);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -85,7 +89,10 @@ export const PeersDashboard = () => {
       setNodeIdentity({
         pubkey: nodeInfo?.identityPubkey || "",
         uris: Array.isArray(nodeInfo?.uris)
-          ? nodeInfo.uris.filter((uri): uri is string => Boolean(uri))
+          ? nodeInfo.uris.filter(
+              (uri: unknown): uri is string =>
+                typeof uri === "string" && uri.length > 0
+            )
           : [],
       });
     } catch (err: any) {
@@ -237,480 +244,540 @@ export const PeersDashboard = () => {
     ? t("common.enabled")
     : t("common.disabled");
 
-  return (
-    <main className="flex-grow p-4 sm:p-8 overflow-y-auto">
-      {isModalOpen && (
-        <OpenChannelModal
-          node={selectedNode}
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={fetchData}
-        />
-      )}
+  const headerButtonClass =
+    "inline-flex items-center gap-2 rounded-md border border-panel-edge bg-panel px-4 py-2.5 text-sm font-medium text-foreground hover:bg-panel-elevated disabled:cursor-not-allowed disabled:opacity-60";
 
-      <div className="mb-8 rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-900/90 via-gray-900 to-gray-800 px-6 py-6 shadow-lg">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight">
-              {t("peers.title")}
-            </h2>
-            <p className="mt-1 text-sm text-gray-400">
-              {t("peers.subtitle")}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => nodeIdentity?.pubkey && handleCopy(nodeIdentity.pubkey)}
-              disabled={!nodeIdentity?.pubkey}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-              title={nodeIdentity?.pubkey || t("peers.nodeIdentity.pubkeyUnavailable")}
-            >
-              {copiedText === nodeIdentity?.pubkey ? (
-                <Check className="h-4 w-4 text-emerald-400" />
-              ) : (
-                <ClipboardCopy className="h-4 w-4 text-yellow-300" />
-              )}
-              {copiedText === nodeIdentity?.pubkey
-                ? t("common.copied")
-                : t("peers.actions.copyPubkey")}
-            </button>
-            <button
-              onClick={() =>
-                nodeIdentity?.uris?.[0] && handleCopy(nodeIdentity.uris[0])
-              }
-              disabled={!nodeIdentity?.uris?.length}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-              title={
-                nodeIdentity?.uris?.length
-                  ? nodeIdentity.uris.join("\n")
-                  : t("peers.nodeIdentity.uriUnavailable")
-              }
-            >
-              {copiedText === nodeIdentity?.uris?.[0] ? (
-                <Check className="h-4 w-4 text-emerald-400" />
-              ) : (
-                <ClipboardCopy className="h-4 w-4 text-yellow-300" />
-              )}
-              {copiedText === nodeIdentity?.uris?.[0]
-                ? t("common.copied")
-                : t("peers.actions.copyUri")}
-            </button>
-            <button
-              onClick={() => fetchData()}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow hover:bg-gray-800 transition focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Zap
-                className={`h-4 w-4 ${
-                  loading ? "animate-spin text-yellow-300" : "text-yellow-400"
-                }`}
-              />
-              {t("peers.actions.refresh")}
-            </button>
-            <button
-              onClick={() => handleOpenModal(null)}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 via-indigo-500 to-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:from-blue-400 hover:to-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
-            >
-              <PlusCircle className="h-5 w-5" />
-              {t("peers.actions.openChannel")}
-            </button>
-          </div>
-        </div>
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title={t("peers.stats.connected")}
-            value={connectedPeers.length}
-            icon={Users}
-          />
-          <StatCard
-            title={t("peers.stats.recommended")}
-            value={recommendedNodes.length}
-            icon={Star}
-          />
-          <StatCard
-            title={t("peers.stats.autoManage")}
-            value={autoManageLabel}
-            icon={SettingsIcon}
-          />
-          <StatCard
-            title={t("peers.stats.recommendedCapacity")}
-            value={totalRecommendedCapacity.toLocaleString()}
-            unit={t("common.sats")}
-            icon={Wifi}
-          />
-        </div>
-      </div>
-
-      <div className="mb-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
-        <h3 className="mb-3 flex items-center text-lg font-bold">
-          <SettingsIcon className="mr-2 h-5 w-5 text-blue-400" />
-          {t("peers.settings.title")}
-        </h3>
-        {settingsLoading ? (
-          <div className="flex items-center text-gray-400">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {t("peers.settings.loading")}
-          </div>
+  const ConnectButton = ({ node }: { node: RemoteNode }) => {
+    const noAddress = !node.addresses || node.addresses.length === 0;
+    return (
+      <button
+        onClick={() => handleConnect(node)}
+        disabled={connectingNode === node.pubKey || noAddress}
+        className="w-full inline-flex items-center justify-center rounded-md bg-success-bg px-3 py-2 text-sm font-semibold text-success border border-success/30 hover:bg-success/20 disabled:cursor-not-allowed disabled:opacity-60"
+        title={noAddress ? t("peers.connectButton.noAddress") : t("peers.connectButton.connect")}
+      >
+        {connectingNode === node.pubKey ? (
+          <>
+            <Wifi size={16} className="mr-1 animate-pulse" />
+            {t("peers.connectButton.connecting")}
+          </>
         ) : (
-          <div>
-            {settingsError && (
-              <div className="mb-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
-                {settingsError}
-              </div>
-            )}
-            <div className="flex items-center space-x-3">
-              <label
-                htmlFor="autoManageToggle"
-                className="flex cursor-pointer items-center"
-              >
-                <div className="relative">
-                  <input
-                    id="autoManageToggle"
-                    type="checkbox"
-                    className="sr-only"
-                    checked={isAutoManageEnabled}
-                    onChange={handleToggleAutoManage}
-                    disabled={updatingSettings}
-                  />
-                  <div
-                    className={`block h-6 w-10 rounded-full transition ${
-                      isAutoManageEnabled ? "bg-emerald-500" : "bg-gray-600"
-                    }`}
-                  ></div>
-                  <div
-                    className={`dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                      isAutoManageEnabled ? "translate-x-4" : ""
-                    }`}
-                  ></div>
-                </div>
-                <div className="ml-3 text-gray-300">
-                  {t("peers.settings.toggleDescription")}
-                </div>
-              </label>
-              {updatingSettings && (
-                <Loader2 className="h-4 w-4 animate-spin text-blue-300" />
-              )}
-            </div>
-            <p className="mt-1 text-xs text-gray-500">
-              {t("peers.settings.helper")}
-            </p>
-          </div>
+          t("peers.connectButton.connect")
         )}
-      </div>
+      </button>
+    );
+  };
 
-      {error && (
-        <div className="mb-6 rounded-lg border border-red-500 bg-red-500/15 px-4 py-3 text-red-200">
-          {error}
-        </div>
-      )}
-      {successMessage && (
-        <div className="mb-6 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-200">
-          {successMessage}
-        </div>
-      )}
+  return (
+    <main className="flex-grow overflow-y-auto">
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {isModalOpen && (
+          <OpenChannelModal
+            node={selectedNode}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={fetchData}
+          />
+        )}
 
-      <div className="mb-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
-        <h3 className="mb-3 flex items-center text-lg font-bold">
-          <Wifi className="mr-2 h-5 w-5 text-sky-400" />
-          {t("peers.manual.title")}
-        </h3>
-        <p className="mb-4 text-sm text-gray-400">
-          {t("peers.manual.description")}
-        </p>
-        <form
-          onSubmit={handleManualConnect}
-          className="flex flex-col gap-3 md:flex-row md:items-end"
-        >
-          <div className="flex-1">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t("peers.manual.peerPubkey")}
-            </label>
-            <input
-              type="text"
-              value={manualPubKey}
-              onChange={(e) => setManualPubKey(e.target.value)}
-              placeholder={t("peers.manual.pubkeyPlaceholder")}
-              className="w-full rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
+        <div className="relative mb-8 overflow-hidden rounded-2xl border border-panel-edge bg-panel px-6 py-6">
+          <div
+            className="pointer-events-none absolute inset-0"
+            aria-hidden="true"
+            style={{
+              backgroundImage:
+                "radial-gradient(90% 70% at 50% 45%, rgba(201,162,39,0.08), transparent 58%)",
+            }}
+          />
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                {t("peers.title")}
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                {t("peers.subtitle")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => nodeIdentity?.pubkey && handleCopy(nodeIdentity.pubkey)}
+                disabled={!nodeIdentity?.pubkey}
+                className={headerButtonClass}
+                title={nodeIdentity?.pubkey || t("peers.nodeIdentity.pubkeyUnavailable")}
+              >
+                {copiedText === nodeIdentity?.pubkey ? (
+                  <Check className="h-4 w-4 text-success" />
+                ) : (
+                  <ClipboardCopy className="h-4 w-4 text-accent" />
+                )}
+                {copiedText === nodeIdentity?.pubkey
+                  ? t("common.copied")
+                  : t("peers.actions.copyPubkey")}
+              </button>
+              <button
+                onClick={() =>
+                  nodeIdentity?.uris?.[0] && handleCopy(nodeIdentity.uris[0])
+                }
+                disabled={!nodeIdentity?.uris?.length}
+                className={headerButtonClass}
+                title={
+                  nodeIdentity?.uris?.length
+                    ? nodeIdentity.uris.join("\n")
+                    : t("peers.nodeIdentity.uriUnavailable")
+                }
+              >
+                {copiedText === nodeIdentity?.uris?.[0] ? (
+                  <Check className="h-4 w-4 text-success" />
+                ) : (
+                  <ClipboardCopy className="h-4 w-4 text-accent" />
+                )}
+                {copiedText === nodeIdentity?.uris?.[0]
+                  ? t("common.copied")
+                  : t("peers.actions.copyUri")}
+              </button>
+              <button
+                onClick={() => fetchData()}
+                disabled={loading}
+                className={headerButtonClass}
+              >
+                <Zap
+                  className={`h-4 w-4 ${
+                    loading ? "animate-spin-smooth text-accent" : "text-accent"
+                  }`}
+                />
+                {t("peers.actions.refresh")}
+              </button>
+              <button
+                onClick={() => handleOpenModal(null)}
+                className="inline-flex items-center gap-2 rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-accent-fg hover:bg-accent-hover"
+              >
+                <PlusCircle className="h-5 w-5" />
+                {t("peers.actions.openChannel")}
+              </button>
+            </div>
+          </div>
+          <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title={t("peers.stats.connected")}
+              value={connectedPeers.length}
+              icon={Users}
+            />
+            <StatCard
+              title={t("peers.stats.recommended")}
+              value={recommendedNodes.length}
+              icon={Star}
+            />
+            <StatCard
+              title={t("peers.stats.autoManage")}
+              value={autoManageLabel}
+              icon={SettingsIcon}
+            />
+            <StatCard
+              title={t("peers.stats.recommendedCapacity")}
+              value={totalRecommendedCapacity.toLocaleString(locale)}
+              unit={t("common.sats")}
+              icon={Wifi}
             />
           </div>
-          <div className="flex-1">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-400">
-              {t("peers.manual.host")}
-            </label>
-            <input
-              type="text"
-              value={manualHost}
-              onChange={(e) => setManualHost(e.target.value)}
-              placeholder={t("peers.manual.hostPlaceholder")}
-              className="w-full rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={manualConnectLoading}
-            className="inline-flex items-center justify-center rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-sky-500/80 disabled:cursor-not-allowed disabled:opacity-60"
+        </div>
+
+        <div className="mb-8 rounded-lg border border-panel-edge bg-panel p-5">
+          <h3 className="mb-3 flex items-center text-lg font-bold">
+            <SettingsIcon className="mr-2 h-5 w-5 text-accent" />
+            {t("peers.settings.title")}
+          </h3>
+          {settingsLoading ? (
+            <div className="flex items-center text-muted">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin-smooth text-accent" />
+              {t("peers.settings.loading")}
+            </div>
+          ) : (
+            <div>
+              {settingsError && (
+                <Alert variant="danger" className="mb-3 text-left">
+                  {settingsError}
+                </Alert>
+              )}
+              <div className="flex items-center space-x-3">
+                <label
+                  htmlFor="autoManageToggle"
+                  className="flex cursor-pointer items-center"
+                >
+                  <div className="relative">
+                    <input
+                      id="autoManageToggle"
+                      type="checkbox"
+                      className="sr-only"
+                      checked={isAutoManageEnabled}
+                      onChange={handleToggleAutoManage}
+                      disabled={updatingSettings}
+                    />
+                    <div
+                      className={`block h-6 w-10 rounded-full transition ${
+                        isAutoManageEnabled ? "bg-success" : "bg-panel-elevated"
+                      }`}
+                    ></div>
+                    <div
+                      className={`dot absolute left-1 top-1 h-4 w-4 rounded-full bg-foreground transition-transform ${
+                        isAutoManageEnabled ? "translate-x-4" : ""
+                      }`}
+                    ></div>
+                  </div>
+                  <div className="ml-3 text-foreground">
+                    {t("peers.settings.toggleDescription")}
+                  </div>
+                </label>
+                {updatingSettings && (
+                  <Loader2 className="h-4 w-4 animate-spin-smooth text-accent" />
+                )}
+              </div>
+              <p className="mt-1 text-xs text-muted">
+                {t("peers.settings.helper")}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {error && <Alert variant="danger" className="mb-6 text-left">{error}</Alert>}
+        {successMessage && (
+          <Alert variant="success" className="mb-6">{successMessage}</Alert>
+        )}
+
+        <div className="mb-8 rounded-lg border border-panel-edge bg-panel p-5">
+          <h3 className="mb-3 flex items-center text-lg font-bold">
+            <Wifi className="mr-2 h-5 w-5 text-accent" />
+            {t("peers.manual.title")}
+          </h3>
+          <p className="mb-4 text-sm text-muted">
+            {t("peers.manual.description")}
+          </p>
+          <form
+            onSubmit={handleManualConnect}
+            className="flex flex-col gap-3 md:flex-row md:items-end"
           >
-            {manualConnectLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t("peers.manual.submitting")}
-              </>
-            ) : (
-              t("peers.manual.submit")
-            )}
-          </button>
-        </form>
-      </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                {t("peers.manual.peerPubkey")}
+              </label>
+              <input
+                type="text"
+                value={manualPubKey}
+                onChange={(e) => setManualPubKey(e.target.value)}
+                placeholder={t("peers.manual.pubkeyPlaceholder")}
+                className="w-full rounded-lg border border-panel-edge bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent font-address"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                {t("peers.manual.host")}
+              </label>
+              <input
+                type="text"
+                value={manualHost}
+                onChange={(e) => setManualHost(e.target.value)}
+                placeholder={t("peers.manual.hostPlaceholder")}
+                className="w-full rounded-lg border border-panel-edge bg-input px-3 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={manualConnectLoading}
+              className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-accent-fg hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {manualConnectLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin-smooth" />
+                  {t("peers.manual.submitting")}
+                </>
+              ) : (
+                t("peers.manual.submit")
+              )}
+            </button>
+          </form>
+        </div>
 
-      <div className="rounded-lg border border-gray-700 bg-gray-800/80 p-5">
-        <h3 className="mb-4 flex items-center text-lg font-bold">
-          <Users className="mr-2 h-5 w-5 text-emerald-400" />
-          {t("peers.connectedPeers.title", { count: connectedPeers.length })}
-        </h3>
-        {loading ? (
-          <div className="flex h-40 items-center justify-center">
-            <Zap className="h-8 w-8 animate-spin text-emerald-300" />
+        <div className="rounded-lg border border-panel-edge bg-panel p-5">
+          <h3 className="mb-4 flex items-center text-lg font-bold">
+            <Users className="mr-2 h-5 w-5 text-credit" />
+            {t("peers.connectedPeers.title", { count: connectedPeers.length })}
+          </h3>
+          {loading ? (
+            <div className="flex h-40 items-center justify-center">
+              <Zap
+                className="h-8 w-8 animate-spin-smooth text-accent"
+                aria-label={t("admin.loading")}
+                role="img"
+              />
+            </div>
+          ) : (
+            <div className="max-h-64 overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-panel-edge text-xs uppercase tracking-wide text-muted">
+                    <th className="p-2 font-semibold">
+                      {t("peers.connectedPeers.address")}
+                    </th>
+                    <th className="p-2 font-semibold">
+                      {t("peers.connectedPeers.pubkey")}
+                    </th>
+                    <th className="p-2 font-semibold">
+                      {t("peers.connectedPeers.actions")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {connectedPeers.length > 0 ? (
+                    connectedPeers.map((peer, index) => (
+                      <tr
+                        key={peer.pubKey || `${peer.address}-${index}`}
+                        className="border-b border-panel-edge transition-colors hover:bg-panel-elevated last:border-0"
+                      >
+                        <td
+                          className="max-w-xs truncate p-2 align-middle font-address text-xs sm:text-sm"
+                          title={peer.address || t("common.notAvailable")}
+                        >
+                          <CopyableCell
+                            fullText={peer.address || t("common.notAvailable")}
+                            copiedText={copiedText}
+                            onCopy={handleCopy}
+                          >
+                            {peer.address || t("common.notAvailable")}
+                          </CopyableCell>
+                        </td>
+                        <td
+                          className="max-w-xs truncate p-2 align-middle font-address text-xs sm:text-sm"
+                          title={peer.pubKey || t("common.notAvailable")}
+                        >
+                          <CopyableCell
+                            fullText={peer.pubKey || t("common.notAvailable")}
+                            copiedText={copiedText}
+                            onCopy={handleCopy}
+                          >
+                            {peer.pubKey
+                              ? `${peer.pubKey.substring(0, 8)}...${peer.pubKey.substring(
+                                  peer.pubKey.length - 4
+                                )}`
+                              : t("common.notAvailable")}
+                          </CopyableCell>
+                        </td>
+                        <td className="p-2 align-middle">
+                          <button
+                            onClick={() =>
+                              handleOpenModal({
+                                pubKey: peer.pubKey,
+                                alias: peer.address || t("peers.connectedPeers.fallbackAlias"),
+                                addresses: peer.address ? [peer.address] : [],
+                                capacity: 0,
+                                numChannels: 0,
+                                betweennessCentrality: 0,
+                              })
+                            }
+                            disabled={!peer.pubKey}
+                            className="inline-flex items-center rounded-md bg-success-bg px-3 py-1.5 text-sm font-semibold text-success border border-success/30 hover:bg-success/20 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {t("peers.actions.openChannel")}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className="p-8 text-center text-sm text-muted"
+                      >
+                        {t("peers.tables.empty")}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-8 rounded-lg border border-panel-edge bg-panel p-5">
+          <h3 className="mb-4 flex items-center text-lg font-bold">
+            <Users className="mr-2 h-5 w-5 text-accent" />
+            {t("peers.tables.recommendedTitle")}
+          </h3>
+          <div className="mb-4 flex items-center justify-between">
+            <div className="relative w-full max-w-xs">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                size={20}
+              />
+              <input
+                type="text"
+                placeholder={t("common.searchPlaceholder")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-panel-edge bg-input pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+            </div>
           </div>
-        ) : (
-          <div className="max-h-64 overflow-x-auto">
+
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
-                  <th className="p-2 font-semibold">
-                    {t("peers.connectedPeers.address")}
-                  </th>
-                  <th className="p-2 font-semibold">
-                    {t("peers.connectedPeers.pubkey")}
-                  </th>
-                  <th className="p-2 font-semibold">
-                    {t("peers.connectedPeers.actions")}
-                  </th>
+                <tr className="border-b border-panel-edge text-xs uppercase tracking-wide text-muted">
+                  <th className="p-2 font-semibold">{t("peers.tables.alias")}</th>
+                  <th className="p-2 font-semibold">{t("peers.tables.channels")}</th>
+                  <th className="p-2 font-semibold">{t("peers.tables.capacity")}</th>
+                  <th className="p-2 font-semibold">{t("peers.tables.centrality")}</th>
+                  <th className="p-2 font-semibold">{t("peers.tables.actions")}</th>
                 </tr>
               </thead>
               <tbody>
-                {connectedPeers.length > 0 ? (
-                  connectedPeers.map((peer, index) => (
+                {paginatedRecommendedNodes.length > 0 ? (
+                  paginatedRecommendedNodes.map((node) => (
                     <tr
-                      key={peer.pubKey || `${peer.address}-${index}`}
-                      className="border-b border-gray-800/70 transition-colors hover:bg-gray-800/60 last:border-0"
+                      key={node.pubKey}
+                      className="border-b border-panel-edge transition-colors hover:bg-panel-elevated last:border-0"
                     >
                       <td
-                        className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
-                        title={peer.address || t("common.notAvailable")}
+                        className="max-w-xs truncate p-2 align-middle font-address text-xs sm:text-sm"
+                        title={node.alias || node.pubKey}
                       >
                         <CopyableCell
-                          fullText={peer.address || t("common.notAvailable")}
+                          fullText={node.alias || node.pubKey}
                           copiedText={copiedText}
                           onCopy={handleCopy}
                         >
-                          {peer.address || t("common.notAvailable")}
-                        </CopyableCell>
-                      </td>
-                      <td
-                        className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
-                        title={peer.pubKey || t("common.notAvailable")}
-                      >
-                        <CopyableCell
-                          fullText={peer.pubKey || t("common.notAvailable")}
-                          copiedText={copiedText}
-                          onCopy={handleCopy}
-                        >
-                          {peer.pubKey
-                            ? `${peer.pubKey.substring(0, 8)}...${peer.pubKey.substring(
-                                peer.pubKey.length - 4
-                              )}`
-                            : t("common.notAvailable")}
+                          {node.alias ||
+                            `${node.pubKey.substring(0, 10)}...${node.pubKey.substring(
+                              node.pubKey.length - 4
+                            )}`}
                         </CopyableCell>
                       </td>
                       <td className="p-2 align-middle">
-                        <button
-                          onClick={() =>
-                            handleOpenModal({
-                              pubKey: peer.pubKey,
-                              alias: peer.address || t("peers.connectedPeers.fallbackAlias"),
-                              addresses: peer.address ? [peer.address] : [],
-                              capacity: 0,
-                              numChannels: 0,
-                              betweennessCentrality: 0,
-                            })
-                          }
-                          disabled={!peer.pubKey}
-                          className="inline-flex items-center rounded-lg bg-emerald-500 px-3 py-1 text-sm font-semibold text-white transition hover:bg-emerald-500/80 disabled:cursor-not-allowed disabled:opacity-60"
+                        <CopyableCell
+                          fullText={String(node.numChannels)}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
                         >
-                          {t("peers.actions.openChannel")}
-                        </button>
+                          <span className="font-amount">{node.numChannels}</span>
+                        </CopyableCell>
+                      </td>
+                      <td className="p-2 align-middle">
+                        <CopyableCell
+                          fullText={node.capacity.toLocaleString(locale)}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          <span className="font-amount">
+                            {node.capacity.toLocaleString(locale)}
+                          </span>{" "}
+                          {t("common.sats")}
+                        </CopyableCell>
+                      </td>
+                      <td className="p-2 align-middle">
+                        <CopyableCell
+                          fullText={node.betweennessCentrality.toFixed(6)}
+                          copiedText={copiedText}
+                          onCopy={handleCopy}
+                        >
+                          <span className="font-amount">
+                            {node.betweennessCentrality.toFixed(6)}
+                          </span>
+                        </CopyableCell>
+                      </td>
+                      <td className="p-2 align-middle w-32">
+                        <ConnectButton node={node} />
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td
-                      colSpan={3}
-                      className="p-8 text-center text-sm text-gray-500"
+                      colSpan={5}
+                      className="p-8 text-center text-sm text-muted"
                     >
-                      {t("peers.tables.empty")}
+                      {searchTerm
+                        ? t("peers.tables.emptySearch", { query: searchTerm })
+                        : t("peers.tables.empty")}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
 
-      <div className="mt-8 rounded-lg border border-gray-700 bg-gray-800/80 p-5">
-        <h3 className="mb-4 flex items-center text-lg font-bold">
-          <Users className="mr-2 h-5 w-5 text-sky-400" />
-          {t("peers.tables.recommendedTitle")}
-        </h3>
-        <div className="mb-4 flex items-center justify-between">
-          <div className="relative w-full max-w-xs">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder={t("common.searchPlaceholder")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-gray-700 bg-gray-900/60 pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-sky-400/60 focus:border-transparent"
-            />
-          </div>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
-                <th className="p-2 font-semibold">{t("peers.tables.alias")}</th>
-                <th className="p-2 font-semibold hidden md:table-cell">
-                  {t("peers.tables.channels")}
-                </th>
-                <th className="p-2 font-semibold hidden lg:table-cell">
-                  {t("peers.tables.capacity")}
-                </th>
-                <th className="p-2 font-semibold hidden lg:table-cell">
-                  {t("peers.tables.centrality")}
-                </th>
-                <th className="p-2 font-semibold">{t("peers.tables.actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedRecommendedNodes.length > 0 ? (
-                paginatedRecommendedNodes.map((node) => (
-                  <tr
-                    key={node.pubKey}
-                    className="border-b border-gray-800/70 transition-colors hover:bg-gray-800/60 last:border-0"
-                  >
-                    <td
-                      className="max-w-xs truncate p-2 align-middle font-mono text-xs sm:text-sm"
+          <div className="sm:hidden space-y-3">
+            {paginatedRecommendedNodes.length > 0 ? (
+              paginatedRecommendedNodes.map((node) => (
+                <div
+                  key={node.pubKey}
+                  className="rounded-lg border border-panel-edge bg-panel-elevated p-4 space-y-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p
+                      className="font-address text-sm font-semibold break-all text-foreground"
                       title={node.alias || node.pubKey}
                     >
-                      <CopyableCell
-                        fullText={node.alias || node.pubKey}
-                        copiedText={copiedText}
-                        onCopy={handleCopy}
-                      >
-                        {node.alias ||
-                          `${node.pubKey.substring(0, 10)}...${node.pubKey.substring(
-                            node.pubKey.length - 4
-                          )}`}
-                      </CopyableCell>
-                    </td>
-                    <td className="p-2 align-middle hidden md:table-cell">
-                      <CopyableCell
-                        fullText={String(node.numChannels)}
-                        copiedText={copiedText}
-                        onCopy={handleCopy}
-                      >
+                      {node.alias ||
+                        `${node.pubKey.substring(0, 10)}...${node.pubKey.substring(
+                          node.pubKey.length - 4
+                        )}`}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-xs text-muted">
+                    <div className="flex items-center justify-between">
+                      <span>{t("peers.tables.channels")}</span>
+                      <span className="font-amount text-foreground">
                         {node.numChannels}
-                      </CopyableCell>
-                    </td>
-                    <td className="p-2 align-middle hidden lg:table-cell">
-                      <CopyableCell
-                        fullText={node.capacity.toLocaleString()}
-                        copiedText={copiedText}
-                        onCopy={handleCopy}
-                      >
-                        {node.capacity.toLocaleString()} {t("common.sats")}
-                      </CopyableCell>
-                    </td>
-                    <td className="p-2 align-middle hidden lg:table-cell">
-                      <CopyableCell
-                        fullText={node.betweennessCentrality.toFixed(6)}
-                        copiedText={copiedText}
-                        onCopy={handleCopy}
-                      >
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>{t("peers.tables.capacity")}</span>
+                      <span className="font-amount text-foreground">
+                        {node.capacity.toLocaleString(locale)} {t("common.sats")}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>{t("peers.tables.centrality")}</span>
+                      <span className="font-amount text-foreground">
                         {node.betweennessCentrality.toFixed(6)}
-                      </CopyableCell>
-                    </td>
-                    <td className="p-2 align-middle">
-                      <button
-                        onClick={() => handleConnect(node)}
-                        disabled={
-                          connectingNode === node.pubKey ||
-                          !node.addresses ||
-                          node.addresses.length === 0
-                        }
-                        className="inline-flex items-center rounded-lg bg-sky-500 px-3 py-1 text-sm font-semibold text-white transition hover:bg-sky-500/80 disabled:cursor-not-allowed disabled:opacity-60"
-                        title={
-                          !node.addresses || node.addresses.length === 0
-                            ? t("peers.connectButton.noAddress")
-                            : t("peers.connectButton.connect")
-                        }
-                      >
-                        {connectingNode === node.pubKey ? (
-                          <>
-                            <Wifi size={16} className="mr-1 animate-pulse" />
-                            {t("peers.connectButton.connecting")}
-                          </>
-                        ) : (
-                          t("peers.connectButton.connect")
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="p-8 text-center text-sm text-gray-500"
-                  >
-                    {searchTerm
-                      ? t("peers.tables.emptySearch", { query: searchTerm })
-                      : t("peers.tables.empty")}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-4 flex items-center justify-between">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1 || totalPages === 0}
-            className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <ChevronLeft size={16} className="mr-1" />
-            {t("channels.pagination.previous")}
-          </button>
-          <span className="text-gray-400">
-            {t("channels.pagination.pageOf", {
-              current: totalPages > 0 ? currentPage : 0,
-              total: totalPages,
-            })}
-          </span>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages || totalPages === 0}
-            className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t("channels.pagination.next")}
-            <ChevronRight size={16} className="ml-1" />
-          </button>
+                      </span>
+                    </div>
+                  </div>
+                  <ConnectButton node={node} />
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-sm text-muted">
+                {searchTerm
+                  ? t("peers.tables.emptySearch", { query: searchTerm })
+                  : t("peers.tables.empty")}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1 || totalPages === 0}
+              className="flex items-center rounded-md border border-panel-edge bg-panel px-4 py-2 text-sm font-medium text-foreground hover:bg-panel-elevated disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft size={16} className="mr-1" />
+              {t("channels.pagination.previous")}
+            </button>
+            <span className="text-muted">
+              {t("channels.pagination.pageOf", {
+                current: totalPages > 0 ? currentPage : 0,
+                total: totalPages,
+              })}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="flex items-center rounded-md border border-panel-edge bg-panel px-4 py-2 text-sm font-medium text-foreground hover:bg-panel-elevated disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t("channels.pagination.next")}
+              <ChevronRight size={16} className="ml-1" />
+            </button>
+          </div>
         </div>
       </div>
     </main>
   );
 };
-

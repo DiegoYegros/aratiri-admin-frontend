@@ -52,6 +52,7 @@ const translations: TranslationDictionary = {
       copy: "Copy",
       copied: "Copied",
       active: "Active",
+      close: "Close",
       next: "Next",
       previous: "Previous",
       searchPlaceholder: "Search...",
@@ -77,6 +78,27 @@ const translations: TranslationDictionary = {
     },
     admin: {
       loading: "Loading...",
+    },
+    charts: {
+      common: {
+        noData: "No data available.",
+      },
+      liquidity: {
+        title: "Channel Liquidity",
+        outbound: "Outbound",
+        inbound: "Inbound",
+      },
+      transactions: {
+        title: "Transaction Volume (Last 30 Days)",
+        credits: "Credits",
+        debits: "Debits",
+      },
+      channels: {
+        title: "Active Channel Liquidity",
+        outbound: "Outbound",
+        inbound: "Inbound",
+        empty: "No liquidity data available for active channels.",
+      },
     },
     dashboard: {
       errors: {
@@ -313,6 +335,7 @@ const translations: TranslationDictionary = {
       copy: "Copiar",
       copied: "Copiado",
       active: "Activo",
+      close: "Cerrar",
       next: "Siguiente",
       previous: "Anterior",
       searchPlaceholder: "Buscar...",
@@ -338,6 +361,27 @@ const translations: TranslationDictionary = {
     },
     admin: {
       loading: "Cargando...",
+    },
+    charts: {
+      common: {
+        noData: "No hay datos disponibles.",
+      },
+      liquidity: {
+        title: "Liquidez de canales",
+        outbound: "Saliente",
+        inbound: "Entrante",
+      },
+      transactions: {
+        title: "Volumen de transacciones (últimos 30 días)",
+        credits: "Créditos",
+        debits: "Débitos",
+      },
+      channels: {
+        title: "Liquidez de canales activos",
+        outbound: "Saliente",
+        inbound: "Entrante",
+        empty: "No hay datos de liquidez para canales activos.",
+      },
     },
     dashboard: {
       errors: {
@@ -623,6 +667,12 @@ export const LanguageProvider = ({
       setLanguageState(stored);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
 
   const setLanguage = useCallback((code: LanguageCode) => {
     setLanguageState(code);

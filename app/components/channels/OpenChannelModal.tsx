@@ -1,8 +1,10 @@
 "use client";
 import { useState } from "react";
 import { apiCall } from "@/app/lib/api";
-import { X, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import { useLanguage } from "@/app/lib/language";
+import { Modal } from "../ui/Modal";
+import { Alert } from "../ui/Alert";
 
 interface RemoteNode {
   pubKey: string;
@@ -14,6 +16,9 @@ interface OpenChannelModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
+
+const fieldClass =
+  "w-full px-4 py-2.5 bg-input border border-panel-edge rounded-lg text-foreground placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition touch-manipulation";
 
 export const OpenChannelModal = ({
   node,
@@ -57,112 +62,93 @@ export const OpenChannelModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-2xl shadow-lg p-8 w-full max-w-lg border border-yellow-500/20 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white"
-          aria-label={t("common.collapse")}
-        >
-          <X size={24} />
-        </button>
-        <h2 className="text-2xl font-bold mb-2">{t("modal.openChannel.title")}</h2>
-        <p className="text-gray-400 mb-6">
-          {t("modal.openChannel.description")}
-        </p>
+    <Modal title={t("modal.openChannel.title")} onClose={onClose} className="max-w-lg">
+      <p className="text-sm text-muted mb-4">
+        {t("modal.openChannel.description")}
+      </p>
 
-        {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="bg-green-500/20 border border-green-500 text-green-300 px-4 py-3 rounded-lg mb-4">
-            {success}
-          </div>
-        )}
+      {error && <Alert variant="danger" className="mb-4">{error}</Alert>}
+      {success && <Alert variant="success" className="mb-4">{success}</Alert>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-muted-strong mb-1">
+            {t("modal.openChannel.nodePublicKey")}
+          </label>
+          <input
+            type="text"
+            value={nodePubkey}
+            onChange={(e) => setNodePubkey(e.target.value)}
+            placeholder="02f..."
+            className={`${fieldClass} font-address`}
+            required
+            readOnly={!!node?.pubKey}
+          />
+          {node && (
+            <p className="text-xs text-muted mt-1">
+              {t("modal.openChannel.openingWith", { alias: node.alias })}
+            </p>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-1">
-              {t("modal.openChannel.nodePublicKey")}
+            <label className="block text-sm font-medium text-muted-strong mb-1">
+              {t("modal.openChannel.localAmount")}
             </label>
             <input
-              type="text"
-              value={nodePubkey}
-              onChange={(e) => setNodePubkey(e.target.value)}
-              placeholder="02f..."
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              type="number"
+              value={localFundingAmount}
+              onChange={(e) => setLocalFundingAmount(e.target.value)}
+              placeholder="1000000"
+              className={fieldClass}
               required
-              readOnly={!!node?.pubKey}
             />
-            {node && (
-              <p className="text-xs text-gray-500 mt-1">
-                {t("modal.openChannel.openingWith", { alias: node.alias })}
-              </p>
-            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                {t("modal.openChannel.localAmount")}
-              </label>
-              <input
-                type="number"
-                value={localFundingAmount}
-                onChange={(e) => setLocalFundingAmount(e.target.value)}
-                placeholder="1000000"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1">
-                {t("modal.openChannel.pushToPeer")}
-              </label>
-              <input
-                type="number"
-                value={pushSat}
-                onChange={(e) => setPushSat(e.target.value)}
-                placeholder={t("modal.openChannel.optional")}
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              />
-            </div>
-          </div>
-          <div className="flex items-center">
-            <input
-              id="private-channel"
-              type="checkbox"
-              checked={privateChannel}
-              onChange={(e) => setPrivateChannel(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-600 bg-gray-700 text-yellow-500 focus:ring-yellow-600"
-            />
-            <label
-              htmlFor="private-channel"
-              className="ml-2 block text-sm text-gray-300"
-            >
-              {t("modal.openChannel.privateLabel")}
+          <div>
+            <label className="block text-sm font-medium text-muted-strong mb-1">
+              {t("modal.openChannel.pushToPeer")}
             </label>
+            <input
+              type="number"
+              value={pushSat}
+              onChange={(e) => setPushSat(e.target.value)}
+              placeholder={t("modal.openChannel.optional")}
+              className={fieldClass}
+            />
           </div>
-          <div className="pt-4">
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-lg hover:bg-yellow-500 disabled:opacity-50 flex items-center justify-center transition"
-            >
-              {loading ? (
-                <>
-                  <Zap className="w-5 h-5 mr-2 animate-spin" />
-                  {t("modal.openChannel.submitting")}
-                </>
-              ) : (
-                t("modal.openChannel.submit")
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+        <div className="flex items-center">
+          <input
+            id="private-channel"
+            type="checkbox"
+            checked={privateChannel}
+            onChange={(e) => setPrivateChannel(e.target.checked)}
+            className="h-4 w-4 rounded border-panel-edge bg-input text-accent focus:ring-accent"
+          />
+          <label
+            htmlFor="private-channel"
+            className="ml-2 block text-sm text-foreground"
+          >
+            {t("modal.openChannel.privateLabel")}
+          </label>
+        </div>
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full min-h-11 bg-accent text-accent-fg font-semibold py-3 px-4 rounded-lg hover:bg-accent-hover disabled:opacity-50 flex items-center justify-center transition touch-manipulation"
+          >
+            {loading ? (
+              <>
+                <Zap className="w-5 h-5 mr-2 animate-spin-smooth" />
+                {t("modal.openChannel.submitting")}
+              </>
+            ) : (
+              t("modal.openChannel.submit")
+            )}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
-

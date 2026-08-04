@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { StatCard } from "../ui/StatCard";
+import { Alert } from "../ui/Alert";
 import { LiquidityPieChart } from "../charts/LiquidityPieChart";
 import { TransactionLineChart } from "../charts/TransactionLineChart";
 import { useLanguage } from "@/app/lib/language";
@@ -22,7 +23,7 @@ interface ChannelBalance {
 }
 
 export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [nodeInfo, setNodeInfo] = useState<NodeInfo | null>(null);
   const [channelBalance, setChannelBalance] = useState<ChannelBalance | null>(
     null
@@ -71,18 +72,21 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
 
   if (loading) {
     return (
-      <main className="flex-grow p-8 flex items-center justify-center">
-        <Server className="w-16 h-16 text-yellow-400 animate-spin" />
+      <main className="flex-grow flex items-center justify-center">
+        <Server
+          className="w-16 h-16 text-accent animate-spin-smooth"
+          aria-label={t("admin.loading")}
+          role="img"
+        />
       </main>
     );
   }
 
   return (
-    <main className="flex-grow p-4 sm:p-8 overflow-y-auto">
+    <main className="flex-grow overflow-y-auto">
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
       {error && (
-        <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg mb-6">
-          {error}
-        </div>
+        <Alert variant="danger" className="mb-6 text-left">{error}</Alert>
       )}
 
       {nodeInfo && (
@@ -99,7 +103,9 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
           />
           <StatCard
             title={t("dashboard.stats.blockHeight")}
-            value={nodeInfo.blockHeight.toLocaleString()}
+            value={nodeInfo.blockHeight.toLocaleString(
+              language === "es" ? "es-ES" : "en-US"
+            )}
             icon={Hash}
           />
           <StatCard
@@ -131,10 +137,15 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {channelBalance && <LiquidityPieChart data={channelBalance} />}
-        {transactionStats.length > 0 && (
-          <TransactionLineChart data={transactionStats} />
-        )}
+        <div className="min-w-0">
+          {channelBalance && <LiquidityPieChart data={channelBalance} />}
+        </div>
+        <div className="min-w-0">
+          {transactionStats.length > 0 && (
+            <TransactionLineChart data={transactionStats} />
+          )}
+        </div>
+      </div>
       </div>
     </main>
   );

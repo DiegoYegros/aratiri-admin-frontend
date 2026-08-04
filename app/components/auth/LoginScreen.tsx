@@ -3,6 +3,11 @@ import { Server } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiCall } from "../../lib/api";
 import { useLanguage } from "@/app/lib/language";
+import { AuthShell } from "../ui/AuthShell";
+import { Alert } from "../ui/Alert";
+
+const fieldClass =
+  "w-full px-4 py-3 bg-input border border-panel-edge rounded-lg text-foreground placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition touch-manipulation";
 
 export const LoginScreen = ({
   setToken,
@@ -64,47 +69,62 @@ export const LoginScreen = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4 font-sans">
-      <div className="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-8 space-y-6 border border-yellow-500/20">
-        <div className="text-center">
-          <Server className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-glow" />
-          <h1 className="text-4xl font-bold">{t("auth.heading")}</h1>
-          <p className="text-gray-400">{t("auth.subheading")}</p>
-        </div>
+    <AuthShell
+      variant="login"
+      icon={Server}
+      title={t("auth.heading")}
+      subtitle={t("auth.subheading")}
+      railTitle={t("auth.signIn")}
+    >
+      {error && <Alert variant="danger">{error}</Alert>}
 
-        {error && (
-          <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg text-center">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={handleLogin} className="space-y-4">
+        <div className="space-y-1.5">
+          <label
+            htmlFor="login-username"
+            className="block text-sm text-muted-strong"
+          >
+            {t("auth.usernamePlaceholder")}
+          </label>
           <input
+            id="login-username"
+            name="username"
             type="text"
+            autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder={t("auth.usernamePlaceholder")}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            className={fieldClass}
             required
           />
+        </div>
+        <div className="space-y-1.5">
+          <label
+            htmlFor="login-password"
+            className="block text-sm text-muted-strong"
+          >
+            {t("auth.passwordPlaceholder")}
+          </label>
           <input
+            id="login-password"
+            name="password"
             type="password"
+            autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t("auth.passwordPlaceholder")}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            className={fieldClass}
             required
           />
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-yellow-400 text-gray-900 font-bold py-3 px-4 rounded-lg hover:bg-yellow-500 disabled:opacity-50 transition"
-          >
-            {loading ? t("auth.signingIn") : t("auth.signIn")}
-          </button>
-        </form>
-      </div>
-    </div>
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full min-h-11 bg-accent text-accent-fg font-semibold py-3 px-4 rounded-lg hover:bg-accent-hover disabled:opacity-50 transition touch-manipulation"
+        >
+          {loading ? t("auth.signingIn") : t("auth.signIn")}
+        </button>
+      </form>
+    </AuthShell>
   );
 };
-

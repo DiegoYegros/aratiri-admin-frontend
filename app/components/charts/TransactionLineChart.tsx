@@ -9,6 +9,18 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useLanguage } from "@/app/lib/language";
+import {
+  AXIS_LINE,
+  AXIS_TICK,
+  CHART_COLORS,
+  CURSOR_STROKE,
+  formatShortDate,
+  GRID_PROPS,
+  LEGEND_STYLE,
+} from "@/app/lib/chartTheme";
+import { ChartTooltip } from "../ui/ChartTooltip";
+import { ChartEmptyState } from "../ui/ChartEmptyState";
 
 interface TransactionStat {
   date: string;
@@ -16,9 +28,17 @@ interface TransactionStat {
   count: number;
 }
 
+interface DailyRow {
+  date: string;
+  credit: number;
+  debit: number;
+}
+
 export const TransactionLineChart = ({ data }: { data: TransactionStat[] }) => {
-  const processData = () => {
-    const dailyData: { [key: string]: { date: string; credit: number; debit: number } } = {};
+  const { language, t } = useLanguage();
+
+  const processData = (): DailyRow[] => {
+    const dailyData: { [key: string]: DailyRow } = {};
 
     data.forEach((stat) => {
       if (!dailyData[stat.date]) {
@@ -34,35 +54,85 @@ export const TransactionLineChart = ({ data }: { data: TransactionStat[] }) => {
 
   const chartData = processData();
 
+  if (chartData.length === 0) {
+    return (
+      <div className="bg-panel p-4 rounded-lg border border-panel-edge h-full">
+        <h3 className="text-lg font-bold mb-4">
+          {t("charts.transactions.title")}
+        </h3>
+        <ChartEmptyState />
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-gray-800 p-4 rounded-lg border border-gray-700 h-full">
-      <h3 className="text-lg font-bold mb-4">Transaction Volume (Last 30 Days)</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#4A5568" />
-          <XAxis dataKey="date" stroke="#A0AEC0" />
-          <YAxis stroke="#A0AEC0" />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "#1A202C",
-              border: "1px solid #4A5568",
-            }}
-          />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="credit"
-            stroke="#34D399"
-            name="Credits"
-          />
-          <Line
-            type="monotone"
-            dataKey="debit"
-            stroke="#FBBF24"
-            name="Debits"
-          />
-        </LineChart>
-      </ResponsiveContainer>
+    <div className="bg-panel p-4 rounded-lg border border-panel-edge h-full">
+      <h3 className="text-lg font-bold mb-4">
+        {t("charts.transactions.title")}
+      </h3>
+      <div className="h-72 lg:h-80 w-full min-w-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis
+              dataKey="date"
+              tick={AXIS_TICK}
+              tickLine={false}
+              axisLine={AXIS_LINE}
+              minTickGap={24}
+              tickMargin={8}
+              tickFormatter={(value: string) => formatShortDate(value, language)}
+            />
+            <YAxis
+              tick={AXIS_TICK}
+              tickLine={false}
+              axisLine={AXIS_LINE}
+              width={40}
+              allowDecimals={false}
+              tickFormatter={(value: number) => value.toLocaleString()}
+            />
+            <Tooltip
+              cursor={{ stroke: CURSOR_STROKE }}
+              content={
+                <ChartTooltip
+                  labelRenderer={(label) =>
+                    formatShortDate(String(label), language)
+                  }
+                />
+              }
+            />
+            <Legend
+              iconType="circle"
+              wrapperStyle={LEGEND_STYLE}
+              formatter={(value: string) =>
+                value === "credit"
+                  ? t("charts.transactions.credits")
+                  : value === "debit"
+                    ? t("charts.transactions.debits")
+                    : value
+              }
+            />
+            <Line
+              type="monotone"
+              dataKey="credit"
+              stroke={CHART_COLORS.credit}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: CHART_COLORS.credit }}
+              name="credit"
+            />
+            <Line
+              type="monotone"
+              dataKey="debit"
+              stroke={CHART_COLORS.debit}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: CHART_COLORS.debit }}
+              name="debit"
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };

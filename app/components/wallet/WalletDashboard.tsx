@@ -18,6 +18,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { StatCard } from "../ui/StatCard";
+import { Alert } from "../ui/Alert";
 import { useLanguage } from "@/app/lib/language";
 
 interface WalletBalance {
@@ -26,7 +27,7 @@ interface WalletBalance {
 }
 
 export const WalletDashboard = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -116,7 +117,7 @@ export const WalletDashboard = () => {
 
   const formatSats = (value: number) => {
     if (value === 0) return "0";
-    return value.toLocaleString();
+    return value.toLocaleString(language === "es" ? "es-ES" : "en-US");
   };
 
   const totalBalance = balance
@@ -125,24 +126,25 @@ export const WalletDashboard = () => {
 
   if (loading) {
     return (
-      <main className="flex-grow p-8 flex items-center justify-center">
-        <Server className="w-16 h-16 text-yellow-400 animate-spin" />
+      <main className="flex-grow flex items-center justify-center">
+        <Server className="w-16 h-16 text-accent animate-spin-smooth" />
       </main>
     );
   }
 
   return (
-    <main className="flex-grow p-4 sm:p-8 overflow-y-auto">
+    <main className="flex-grow overflow-y-auto">
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
       {error && (
-        <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg mb-6">
+        <Alert variant="danger" className="mb-6 text-left">
           {error}
-        </div>
+        </Alert>
       )}
 
       {successMessage && (
-        <div className="bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 px-4 py-3 rounded-lg mb-6">
+        <Alert variant="success" className="mb-6">
           {successMessage}
-        </div>
+        </Alert>
       )}
 
       {balance && (
@@ -168,11 +170,11 @@ export const WalletDashboard = () => {
         </div>
       )}
 
-      <section className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+      <section className="bg-panel border border-panel-edge rounded-lg p-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-xl font-semibold">{t("wallet.section.title")}</h2>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted">
               {t("wallet.section.description")}
             </p>
           </div>
@@ -180,10 +182,10 @@ export const WalletDashboard = () => {
             <button
               onClick={handleRefresh}
               disabled={loading || isRefreshing}
-              className="inline-flex items-center justify-center rounded-md border border-gray-600 bg-gray-700 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-md border border-panel-edge bg-panel px-4 py-2 text-sm font-medium text-foreground hover:bg-panel-elevated disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isRefreshing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin-smooth" />
               ) : (
                 <RefreshCcw className="mr-2 h-4 w-4" />
               )}
@@ -192,10 +194,10 @@ export const WalletDashboard = () => {
             <button
               onClick={handleGenerateAddress}
               disabled={isGenerating}
-              className="inline-flex items-center justify-center rounded-md bg-yellow-500 px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
+              className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-fg hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin-smooth" />
               ) : (
                 <PlusCircle className="mr-2 h-4 w-4" />
               )}
@@ -208,19 +210,19 @@ export const WalletDashboard = () => {
 
         {latestAddress && (
           <div className="mt-6">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted">
               {t("wallet.section.latestAddress")}
             </p>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-              <code className="flex-1 truncate rounded-md border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-yellow-100">
+              <code className="flex-1 truncate rounded-md border border-panel-edge bg-input px-3 py-2 text-sm text-accent font-address">
                 {latestAddress}
               </code>
               <button
                 onClick={handleCopyAddress}
-                className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-sm font-medium text-gray-200 hover:bg-gray-600"
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-panel-edge bg-panel px-3 py-2 text-sm font-medium text-foreground hover:bg-panel-elevated"
               >
                 {copyStatus === "copied" ? (
-                  <Check className="h-4 w-4 text-emerald-400" />
+                  <Check className="h-4 w-4 text-success" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
@@ -232,6 +234,7 @@ export const WalletDashboard = () => {
           </div>
         )}
       </section>
+      </div>
     </main>
   );
 };

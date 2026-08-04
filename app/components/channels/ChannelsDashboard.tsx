@@ -24,8 +24,10 @@ import {
 import { OpenChannelModal } from "./OpenChannelModal";
 import { StatCard } from "../ui/StatCard";
 import { CopyableCell } from "../ui/CopyableCell";
+import { Alert } from "../ui/Alert";
 import { ChannelLiquidityChart } from "../charts/ChannelLiquidityChart";
 import { useLanguage } from "@/app/lib/language";
+import { getLocale } from "@/app/lib/chartTheme";
 
 type ChannelStatusType =
   | "active"
@@ -54,7 +56,7 @@ const formatPubkeyLabel = (pubkey: string) => {
 };
 
 export const ChannelsDashboard = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [channels, setChannels] = useState<UnifiedChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,40 +65,41 @@ export const ChannelsDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [copiedText, setCopiedText] = useState<string | null>(null);
 
+  const locale = getLocale(language);
+  const fmt = (value: number) => value.toLocaleString(locale);
+
   const statusMeta = useMemo(
     () =>
       ({
         active: {
           label: t("statuses.active"),
           icon: CheckCircle,
-          chipClass:
-            "bg-emerald-500/10 text-emerald-200 ring-1 ring-emerald-500/30",
+          chipClass: "bg-success-bg text-success ring-1 ring-success/30",
         },
         inactive: {
           label: t("statuses.inactive"),
           icon: XCircle,
-          chipClass: "bg-rose-500/10 text-rose-200 ring-1 ring-rose-500/30",
+          chipClass: "bg-danger-bg text-danger ring-1 ring-danger/30",
         },
         pending_open: {
           label: t("statuses.pending_open"),
           icon: Clock,
-          chipClass: "bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30",
+          chipClass: "bg-accent-subtle text-accent ring-1 ring-accent/30",
         },
         pending_closing: {
           label: t("statuses.pending_closing"),
           icon: Hourglass,
-          chipClass: "bg-blue-500/10 text-blue-200 ring-1 ring-blue-500/30",
+          chipClass: "bg-accent-subtle text-accent ring-1 ring-accent/30",
         },
         pending_force_closing: {
           label: t("statuses.pending_force_closing"),
           icon: AlertTriangle,
-          chipClass:
-            "bg-orange-500/10 text-orange-200 ring-1 ring-orange-500/30",
+          chipClass: "bg-danger-bg text-danger ring-1 ring-danger/30",
         },
         waiting_close: {
           label: t("statuses.waiting_close"),
           icon: PauseCircle,
-          chipClass: "bg-indigo-500/10 text-indigo-200 ring-1 ring-indigo-500/30",
+          chipClass: "bg-panel-elevated text-muted ring-1 ring-panel-edge",
         },
       } satisfies Record<ChannelStatusType, { label: string; icon: LucideIcon; chipClass: string }>),
     [t]
@@ -133,17 +136,17 @@ export const ChannelsDashboard = () => {
       <span
         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
           isPrivate
-            ? "bg-purple-500/10 text-purple-200 ring-1 ring-purple-500/30"
-            : "bg-sky-500/10 text-sky-200 ring-1 ring-sky-500/30"
+            ? "bg-panel-elevated text-muted ring-1 ring-panel-edge"
+            : "bg-accent-subtle text-accent ring-1 ring-accent/30"
         }`}
         title={
           isPrivate ? t("channels.types.privateTooltip") : t("channels.types.publicTooltip")
         }
       >
         {isPrivate ? (
-          <Lock size={14} className="text-purple-300" />
+          <Lock size={14} />
         ) : (
-          <Globe size={14} className="text-sky-300" />
+          <Globe size={14} />
         )}
         {isPrivate ? t("channels.types.private") : t("channels.types.public")}
       </span>
@@ -368,295 +371,369 @@ export const ChannelsDashboard = () => {
   }, [searchTerm]);
 
   return (
-    <main className="flex-grow p-4 sm:p-8 overflow-y-auto">
-      {isModalOpen && (
-        <OpenChannelModal
-          node={null}
-          onClose={() => setIsModalOpen(false)}
-          onSuccess={handleModalSuccess}
-        />
-      )}
+    <main className="flex-grow overflow-y-auto">
+      <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {isModalOpen && (
+          <OpenChannelModal
+            node={null}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={handleModalSuccess}
+          />
+        )}
 
-      <div className="mb-8 rounded-2xl border border-gray-700 bg-gradient-to-br from-gray-900/90 via-gray-900 to-gray-800 px-6 py-6 shadow-lg">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-3xl font-semibold tracking-tight">
-              {t("channels.title")}
-            </h2>
-            <p className="mt-1 text-sm text-gray-400">
-              {t("channels.subtitle")}
-            </p>
+        <div className="relative mb-8 overflow-hidden rounded-2xl border border-panel-edge bg-panel px-6 py-6">
+          <div
+            className="pointer-events-none absolute inset-0"
+            aria-hidden="true"
+            style={{
+              backgroundImage:
+                "radial-gradient(90% 70% at 50% 45%, rgba(201,162,39,0.08), transparent 58%)",
+            }}
+          />
+          <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                {t("channels.title")}
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                {t("channels.subtitle")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => fetchData()}
+                disabled={loading}
+                className="inline-flex items-center gap-2 rounded-md border border-panel-edge bg-panel px-4 py-2.5 text-sm font-medium text-foreground hover:bg-panel-elevated disabled:opacity-60"
+              >
+                <Zap
+                  className={`h-4 w-4 ${
+                    loading ? "animate-spin-smooth text-accent" : "text-accent"
+                  }`}
+                />
+                {t("channels.actions.refresh")}
+              </button>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-accent-fg hover:bg-accent-hover"
+              >
+                <PlusCircle className="h-5 w-5" />
+                {t("channels.actions.open")}
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => fetchData()}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-600 bg-gray-800/70 px-4 py-2 text-sm font-semibold text-gray-200 shadow hover:bg-gray-800 transition focus:outline-none focus:ring-2 focus:ring-gray-500/50 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-60"
-            >
+          <div className="relative z-10 mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title={t("channels.stats.outbound")}
+              value={fmt(totalLocal)}
+              unit={t("common.sats")}
+              icon={ArrowUpRight}
+            />
+            <StatCard
+              title={t("channels.stats.inbound")}
+              value={fmt(totalRemote)}
+              unit={t("common.sats")}
+              icon={ArrowDownLeft}
+            />
+            <StatCard
+              title={t("channels.stats.active")}
+              value={activeCount}
+              icon={Activity}
+            />
+            <StatCard
+              title={t("channels.stats.pending")}
+              value={pendingCount}
+              icon={AlertTriangle}
+            />
+          </div>
+          <div className="relative z-10 mt-6 flex flex-wrap gap-2">
+            {Object.entries(statusBreakdown)
+              .filter(([, count]) => count > 0)
+              .map(([status, count]) => (
+                <ChannelStatusBadge
+                  key={status}
+                  status={status as ChannelStatusType}
+                  count={count}
+                />
+              ))}
+            {channels.length === 0 && (
+              <span className="text-xs uppercase tracking-wide text-muted">
+                {t("channels.status.none")}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {error && <Alert variant="danger" className="mb-6 text-left">{error}</Alert>}
+
+        <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="min-w-0 lg:col-span-2">
+            <ChannelLiquidityChart data={liquidityChartData} />
+          </div>
+          <div className="flex h-full flex-col rounded-lg border border-panel-edge bg-panel p-5">
+            <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
+              <BarChart3 className="h-5 w-5 text-accent" />
+              {t("channels.stats.snapshot")}
+            </div>
+            <dl className="space-y-3 text-sm text-foreground">
+              <div className="flex items-center justify-between">
+                <dt className="text-muted">{t("channels.stats.totalCapacity")}</dt>
+                <dd className="font-amount font-semibold">
+                  {fmt(totalCapacity)} {t("common.sats")}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-muted">{t("channels.stats.averageActiveSize")}</dt>
+                <dd className="font-amount font-semibold">
+                  {averageActiveSize
+                    ? averageActiveSize.toLocaleString(locale, {
+                        maximumFractionDigits: 0,
+                      })
+                    : "0"}{" "}
+                  {t("common.sats")}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-muted">{t("channels.stats.activeUtilization")}</dt>
+                <dd className="font-amount font-semibold">
+                  {activeUtilization.toFixed(1)}%
+                </dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-muted">{t("channels.stats.publicChannels")}</dt>
+                <dd className="font-semibold">{publicCount}</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-muted">{t("channels.stats.privateChannels")}</dt>
+                <dd className="font-semibold">{privateCount}</dd>
+              </div>
+            </dl>
+            {channels.length === 0 && (
+              <p className="mt-6 text-xs text-muted">
+                {t("channels.stats.empty")}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-panel p-4 rounded-lg border border-panel-edge">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">{t("channels.table.title")}</h3>
+            <div className="relative w-full max-w-xs">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+                size={20}
+              />
+              <input
+                type="text"
+                placeholder={t("channels.table.search")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-lg border border-panel-edge bg-input pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+            </div>
+          </div>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
               <Zap
-                className={`h-4 w-4 ${
-                  loading ? "animate-spin text-yellow-300" : "text-yellow-400"
-                }`}
+                className="w-8 h-8 text-accent animate-spin-smooth"
+                aria-label={t("admin.loading")}
+                role="img"
               />
-              {t("channels.actions.refresh")}
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-400 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:from-emerald-400 hover:to-green-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:ring-offset-2 focus:ring-offset-gray-900"
-            >
-              <PlusCircle className="h-5 w-5" />
-              {t("channels.actions.open")}
-            </button>
-          </div>
-        </div>
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title={t("channels.stats.outbound")}
-            value={totalLocal.toLocaleString()}
-            unit={t("common.sats")}
-            icon={ArrowUpRight}
-          />
-          <StatCard
-            title={t("channels.stats.inbound")}
-            value={totalRemote.toLocaleString()}
-            unit={t("common.sats")}
-            icon={ArrowDownLeft}
-          />
-          <StatCard
-            title={t("channels.stats.active")}
-            value={activeCount}
-            icon={Activity}
-          />
-          <StatCard
-            title={t("channels.stats.pending")}
-            value={pendingCount}
-            icon={AlertTriangle}
-          />
-        </div>
-        <div className="mt-6 flex flex-wrap gap-2">
-          {Object.entries(statusBreakdown)
-            .filter(([, count]) => count > 0)
-            .map(([status, count]) => (
-              <ChannelStatusBadge
-                key={status}
-                status={status as ChannelStatusType}
-                count={count}
-              />
-            ))}
-          {channels.length === 0 && (
-            <span className="text-xs uppercase tracking-wide text-gray-500">
-              {t("channels.status.none")}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-6 rounded-lg border border-red-500 bg-red-500/15 px-4 py-3 text-red-200">
-          {error}
-        </div>
-      )}
-
-      <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <ChannelLiquidityChart data={liquidityChartData} />
-        </div>
-        <div className="flex h-full flex-col rounded-lg border border-gray-700 bg-gray-800/80 p-5">
-          <div className="mb-4 flex items-center gap-2 text-lg font-semibold">
-            <BarChart3 className="h-5 w-5 text-emerald-400" />
-            {t("channels.stats.snapshot")}
-          </div>
-          <dl className="space-y-3 text-sm text-gray-300">
-            <div className="flex items-center justify-between">
-              <dt>{t("channels.stats.totalCapacity")}</dt>
-              <dd className="font-semibold text-white">
-                {totalCapacity.toLocaleString()} {t("common.sats")}
-              </dd>
             </div>
-            <div className="flex items-center justify-between">
-              <dt>{t("channels.stats.averageActiveSize")}</dt>
-              <dd className="font-semibold text-white">
-                {averageActiveSize
-                  ? averageActiveSize.toLocaleString(undefined, {
-                      maximumFractionDigits: 0,
-                    })
-                  : "0"}{" "}
-                {t("common.sats")}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between">
-              <dt>{t("channels.stats.activeUtilization")}</dt>
-              <dd className="font-semibold text-white">
-                {activeUtilization.toFixed(1)}%
-              </dd>
-            </div>
-            <div className="flex items-center justify-between">
-              <dt>{t("channels.stats.publicChannels")}</dt>
-              <dd className="font-semibold text-white">{publicCount}</dd>
-            </div>
-            <div className="flex items-center justify-between">
-              <dt>{t("channels.stats.privateChannels")}</dt>
-              <dd className="font-semibold text-white">{privateCount}</dd>
-            </div>
-          </dl>
-          {channels.length === 0 && (
-            <p className="mt-6 text-xs text-gray-500">
-              {t("channels.stats.empty")}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold">{t("channels.table.title")}</h3>
-          <div className="relative w-full max-w-xs">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder={t("channels.table.search")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-gray-700 bg-gray-900/60 pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-400/60 focus:border-transparent"
-            />
-          </div>
-        </div>
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Zap className="w-8 h-8 text-yellow-400 animate-spin" />
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-700/60 text-xs uppercase tracking-wide text-gray-400">
-                    <th className="p-2 font-semibold">{t("channels.table.status")}</th>
-                    <th className="p-2 font-semibold">{t("channels.table.remotePeer")}</th>
-                    <th className="p-2 font-semibold hidden md:table-cell">
-                      {t("channels.table.localBalance")}
-                    </th>
-                    <th className="p-2 font-semibold hidden md:table-cell">
-                      {t("channels.table.remoteBalance")}
-                    </th>
-                    <th className="p-2 font-semibold hidden lg:table-cell">
-                      {t("channels.table.capacity")}
-                    </th>
-                    <th className="p-2 font-semibold">{t("channels.table.type")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedChannels.length > 0 ? (
-                    paginatedChannels.map((channel) => (
-                      <tr
-                        key={channel.channelPoint}
-                        className="border-b border-gray-800/70 transition-colors hover:bg-gray-800/60 last:border-0"
-                      >
-                        <td className="p-2 align-middle">
-                          <ChannelStatusBadge status={channel.status} />
-                        </td>
-                        <td
-                          className="p-2 align-middle font-mono text-xs sm:text-sm"
-                          title={channel.remotePubkey}
+          ) : (
+            <>
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-panel-edge text-xs uppercase tracking-wide text-muted">
+                      <th className="p-2 font-semibold">{t("channels.table.status")}</th>
+                      <th className="p-2 font-semibold">{t("channels.table.remotePeer")}</th>
+                      <th className="p-2 font-semibold">
+                        {t("channels.table.localBalance")}
+                      </th>
+                      <th className="p-2 font-semibold">
+                        {t("channels.table.remoteBalance")}
+                      </th>
+                      <th className="p-2 font-semibold">
+                        {t("channels.table.capacity")}
+                      </th>
+                      <th className="p-2 font-semibold">{t("channels.table.type")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedChannels.length > 0 ? (
+                      paginatedChannels.map((channel) => (
+                        <tr
+                          key={channel.channelPoint}
+                          className="border-b border-panel-edge transition-colors hover:bg-panel-elevated last:border-0"
                         >
-                          <CopyableCell
-                            fullText={channel.remotePubkey}
-                            copiedText={copiedText}
-                            onCopy={handleCopy}
+                          <td className="p-2 align-middle">
+                            <ChannelStatusBadge status={channel.status} />
+                          </td>
+                          <td
+                            className="p-2 align-middle font-address text-xs sm:text-sm"
+                            title={channel.remotePubkey}
                           >
-                            {formatPubkeyLabel(channel.remotePubkey)}
-                          </CopyableCell>
-                        </td>
-                        <td className="p-2 align-middle hidden md:table-cell">
-                          <CopyableCell
-                            fullText={channel.localBalance.toLocaleString()}
-                            copiedText={copiedText}
-                            onCopy={handleCopy}
-                          >
-                            <span className="font-semibold text-emerald-200">
-                              {channel.localBalance.toLocaleString()}
-                            </span>{" "}
-                            <span className="text-xs text-gray-400">
+                            <CopyableCell
+                              fullText={channel.remotePubkey}
+                              copiedText={copiedText}
+                              onCopy={handleCopy}
+                            >
+                              {formatPubkeyLabel(channel.remotePubkey)}
+                            </CopyableCell>
+                          </td>
+                          <td className="p-2 align-middle">
+                            <CopyableCell
+                              fullText={fmt(channel.localBalance)}
+                              copiedText={copiedText}
+                              onCopy={handleCopy}
+                            >
+                              <span className="font-amount font-semibold text-accent">
+                                {fmt(channel.localBalance)}
+                              </span>{" "}
+                              <span className="text-xs text-muted">
+                                {t("common.sats")}
+                              </span>
+                            </CopyableCell>
+                          </td>
+                          <td className="p-2 align-middle">
+                            <CopyableCell
+                              fullText={fmt(channel.remoteBalance)}
+                              copiedText={copiedText}
+                              onCopy={handleCopy}
+                            >
+                              <span className="font-amount font-semibold text-credit">
+                                {fmt(channel.remoteBalance)}
+                              </span>{" "}
+                              <span className="text-xs text-muted">
+                                {t("common.sats")}
+                              </span>
+                            </CopyableCell>
+                          </td>
+                          <td className="p-2 align-middle">
+                            <CopyableCell
+                              fullText={fmt(channel.capacity)}
+                              copiedText={copiedText}
+                              onCopy={handleCopy}
+                            >
+                              <span className="font-amount">
+                                {fmt(channel.capacity)}
+                              </span>{" "}
                               {t("common.sats")}
-                            </span>
-                          </CopyableCell>
-                        </td>
-                        <td className="p-2 align-middle hidden md:table-cell">
-                          <CopyableCell
-                            fullText={channel.remoteBalance.toLocaleString()}
-                            copiedText={copiedText}
-                            onCopy={handleCopy}
-                          >
-                            <span className="font-semibold text-blue-200">
-                              {channel.remoteBalance.toLocaleString()}
-                            </span>{" "}
-                            <span className="text-xs text-gray-400">
-                              {t("common.sats")}
-                            </span>
-                          </CopyableCell>
-                        </td>
-                        <td className="p-2 align-middle hidden lg:table-cell">
-                          <CopyableCell
-                            fullText={channel.capacity.toLocaleString()}
-                            copiedText={copiedText}
-                            onCopy={handleCopy}
-                          >
-                            {channel.capacity.toLocaleString()} {t("common.sats")}
-                          </CopyableCell>
-                        </td>
-                        <td className="p-2 align-middle">
-                          <ChannelTypeBadge isPrivate={channel.privateChannel} />
+                            </CopyableCell>
+                          </td>
+                          <td className="p-2 align-middle">
+                            <ChannelTypeBadge isPrivate={channel.privateChannel} />
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="p-8 text-center text-sm text-muted"
+                        >
+                          {searchTerm
+                            ? t("channels.table.emptySearch", { query: searchTerm })
+                            : t("channels.table.empty")}
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={6}
-                        className="p-8 text-center text-sm text-gray-500"
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="sm:hidden space-y-3">
+                {paginatedChannels.length > 0 ? (
+                  paginatedChannels.map((channel) => (
+                    <div
+                      key={channel.channelPoint}
+                      className="rounded-lg border border-panel-edge bg-panel-elevated p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <ChannelStatusBadge status={channel.status} />
+                        <ChannelTypeBadge isPrivate={channel.privateChannel} />
+                      </div>
+                      <p
+                        className="font-address text-xs break-all text-foreground"
+                        title={channel.remotePubkey}
                       >
-                        {searchTerm
-                          ? t("channels.table.emptySearch", { query: searchTerm })
-                          : t("channels.table.empty")}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex justify-between items-center mt-4">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1 || totalPages === 0}
-                className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronLeft size={16} className="mr-1" />
-                {t("channels.pagination.previous")}
-              </button>
-              <span className="text-gray-400">
-                {t("channels.pagination.pageOf", {
-                  current: totalPages > 0 ? currentPage : 0,
-                  total: totalPages,
-                })}
-              </span>
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages || totalPages === 0}
-                className="flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {t("channels.pagination.next")}
-                <ChevronRight size={16} className="ml-1" />
-              </button>
-            </div>
-          </>
-        )}
+                        {channel.remotePubkey}
+                      </p>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-accent">
+                          <span className="font-amount font-semibold">
+                            {fmt(channel.localBalance)}
+                          </span>{" "}
+                          <span className="text-xs text-muted">{t("common.sats")}</span>
+                        </span>
+                        <span className="text-credit">
+                          <span className="font-amount font-semibold">
+                            {fmt(channel.remoteBalance)}
+                          </span>{" "}
+                          <span className="text-xs text-muted">{t("common.sats")}</span>
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1 text-xs text-muted">
+                        <div className="flex items-center justify-between">
+                          <span>{t("channels.table.capacity")}</span>
+                          <span className="font-amount text-foreground">
+                            {fmt(channel.capacity)} {t("common.sats")}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{t("channels.table.remotePeer")}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(channel.channelPoint)}
+                            className="max-w-[60%] truncate font-address text-foreground hover:text-accent"
+                            title={channel.channelPoint}
+                          >
+                            {channel.channelPoint}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-sm text-muted">
+                    {searchTerm
+                      ? t("channels.table.emptySearch", { query: searchTerm })
+                      : t("channels.table.empty")}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-between items-center mt-4">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1 || totalPages === 0}
+                  className="flex items-center rounded-md border border-panel-edge bg-panel px-4 py-2 text-sm font-medium text-foreground hover:bg-panel-elevated disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ChevronLeft size={16} className="mr-1" />
+                  {t("channels.pagination.previous")}
+                </button>
+                <span className="text-muted">
+                  {t("channels.pagination.pageOf", {
+                    current: totalPages > 0 ? currentPage : 0,
+                    total: totalPages,
+                  })}
+                </span>
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(totalPages, p + 1))
+                  }
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  className="flex items-center rounded-md border border-panel-edge bg-panel px-4 py-2 text-sm font-medium text-foreground hover:bg-panel-elevated disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t("channels.pagination.next")}
+                  <ChevronRight size={16} className="ml-1" />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </main>
   );
 };
-

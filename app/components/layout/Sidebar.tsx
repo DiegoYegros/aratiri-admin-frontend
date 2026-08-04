@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useMemo } from "react";
 import { useLanguage } from "@/app/lib/language";
+import { LanguageSwitcher } from "../ui/LanguageSwitcher";
 
 interface SidebarProps {
   isRefreshing: boolean;
@@ -52,19 +53,19 @@ export const Sidebar = ({
 
   return (
     <aside
-      className={`bg-gray-800 text-white flex-col hidden sm:flex border-r border-gray-700 h-screen sticky top-0 transition-all duration-300 ${
+      className={`bg-panel text-foreground flex-col hidden sm:flex border-r border-panel-edge h-screen sticky top-0 transition-all duration-300 ${
         isSidebarCollapsed ? "w-20" : "w-64"
       }`}
     >
       <div
-        className={`flex items-center p-4 h-16 cursor-pointer border-b border-gray-700 ${
+        className={`flex items-center p-4 h-16 cursor-pointer border-b border-panel-edge ${
           isSidebarCollapsed ? "justify-center" : "space-x-3"
         }`}
         onClick={onRefresh}
         title={t("common.refresh")}
       >
         <Server
-          className={`w-8 h-8 text-yellow-400 ${
+          className={`w-8 h-8 text-accent ${
             isRefreshing ? "animate-spin-smooth" : ""
           }`}
         />
@@ -86,17 +87,15 @@ export const Sidebar = ({
                   isSidebarCollapsed ? "justify-center" : ""
                 } ${
                   activeView === key
-                    ? "text-white bg-yellow-500/20"
-                    : "text-gray-400 hover:bg-gray-700/50"
+                    ? "text-accent bg-accent-subtle"
+                    : "text-muted hover:bg-panel-elevated hover:text-foreground"
                 }`}
                 title={label}
               >
                 <Icon
                   className={`w-5 h-5 ${
                     isSidebarCollapsed ? "" : "mr-3"
-                  } ${
-                    activeView === key ? "text-yellow-400" : ""
-                  }`}
+                  } ${activeView === key ? "text-accent" : ""}`}
                 />
                 <span
                   className={`font-semibold ${
@@ -110,10 +109,11 @@ export const Sidebar = ({
           ))}
         </ul>
       </nav>
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-panel-edge space-y-2">
+        <LanguageSwitcher collapsed={isSidebarCollapsed} />
         <button
           onClick={onToggleCollapse}
-          className={`flex items-center w-full px-3 py-2 text-gray-400 hover:bg-gray-700/50 rounded-md mb-2 ${
+          className={`flex items-center w-full px-3 py-2 text-muted hover:bg-panel-elevated hover:text-foreground rounded-md ${
             isSidebarCollapsed ? "justify-center" : ""
           }`}
           title={
@@ -131,7 +131,7 @@ export const Sidebar = ({
         </button>
         <button
           onClick={onLogout}
-          className={`flex items-center w-full px-3 py-2 text-gray-400 hover:bg-gray-700/50 rounded-md ${
+          className={`flex items-center w-full px-3 py-2 text-muted hover:bg-panel-elevated hover:text-foreground rounded-md ${
             isSidebarCollapsed ? "justify-center" : ""
           }`}
           title={t("common.logout")}
@@ -145,4 +145,3 @@ export const Sidebar = ({
     </aside>
   );
 };
-

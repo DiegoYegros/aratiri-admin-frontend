@@ -140,7 +140,7 @@ export const OpenChannelModal = ({
           >
             {loading ? (
               <>
-                <Zap className="w-5 h-5 mr-2 animate-spin-smooth" />
+                <Zap className="w-5 h-5 mr-2 animate-calm-busy" />
                 {t("modal.openChannel.submitting")}
               </>
             ) : (

@@ -66,7 +66,7 @@ export const Sidebar = ({
       >
         <Server
           className={`w-8 h-8 text-accent ${
-            isRefreshing ? "animate-spin-smooth" : ""
+            isRefreshing ? "animate-calm-busy" : ""
           }`}
         />
         <h1

@@ -123,7 +123,7 @@ export const ChannelsDashboard = () => {
         <StatusIcon size={14} className="mr-1" />
         {meta.label}
         {typeof count === "number" && (
-          <span className="ml-2 rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+          <span className="ml-2 rounded-full bg-overlay px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
             {count}
           </span>
         )}
@@ -407,7 +407,7 @@ export const ChannelsDashboard = () => {
               >
                 <Zap
                   className={`h-4 w-4 ${
-                    loading ? "animate-spin-smooth text-accent" : "text-accent"
+                    loading ? "animate-calm-busy text-accent" : "text-accent"
                   }`}
                 />
                 {t("channels.actions.refresh")}
@@ -535,7 +535,7 @@ export const ChannelsDashboard = () => {
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <Zap
-                className="w-8 h-8 text-accent animate-spin-smooth"
+                className="w-8 h-8 text-accent animate-calm-busy"
                 aria-label={t("admin.loading")}
                 role="img"
               />

@@ -341,7 +341,7 @@ export const PeersDashboard = () => {
               >
                 <Zap
                   className={`h-4 w-4 ${
-                    loading ? "animate-spin-smooth text-accent" : "text-accent"
+                    loading ? "animate-calm-busy text-accent" : "text-accent"
                   }`}
                 />
                 {t("peers.actions.refresh")}
@@ -387,7 +387,7 @@ export const PeersDashboard = () => {
           </h3>
           {settingsLoading ? (
             <div className="flex items-center text-muted">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin-smooth text-accent" />
+              <Loader2 className="mr-2 h-4 w-4 animate-calm-busy text-accent" />
               {t("peers.settings.loading")}
             </div>
           ) : (
@@ -427,7 +427,7 @@ export const PeersDashboard = () => {
                   </div>
                 </label>
                 {updatingSettings && (
-                  <Loader2 className="h-4 w-4 animate-spin-smooth text-accent" />
+                  <Loader2 className="h-4 w-4 animate-calm-busy text-accent" />
                 )}
               </div>
               <p className="mt-1 text-xs text-muted">
@@ -485,7 +485,7 @@ export const PeersDashboard = () => {
             >
               {manualConnectLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin-smooth" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-calm-busy" />
                   {t("peers.manual.submitting")}
                 </>
               ) : (
@@ -503,7 +503,7 @@ export const PeersDashboard = () => {
           {loading ? (
             <div className="flex h-40 items-center justify-center">
               <Zap
-                className="h-8 w-8 animate-spin-smooth text-accent"
+                className="h-8 w-8 animate-calm-busy text-accent"
                 aria-label={t("admin.loading")}
                 role="img"
               />

@@ -127,7 +127,7 @@ export const WalletDashboard = () => {
   if (loading) {
     return (
       <main className="flex-grow flex items-center justify-center">
-        <Server className="w-16 h-16 text-accent animate-spin-smooth" />
+        <Server className="w-16 h-16 text-accent animate-calm-busy" />
       </main>
     );
   }
@@ -185,7 +185,7 @@ export const WalletDashboard = () => {
               className="inline-flex items-center justify-center rounded-md border border-panel-edge bg-panel px-4 py-2 text-sm font-medium text-foreground hover:bg-panel-elevated disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isRefreshing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin-smooth" />
+                <Loader2 className="mr-2 h-4 w-4 animate-calm-busy" />
               ) : (
                 <RefreshCcw className="mr-2 h-4 w-4" />
               )}
@@ -197,7 +197,7 @@ export const WalletDashboard = () => {
               className="inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-semibold text-accent-fg hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isGenerating ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin-smooth" />
+                <Loader2 className="mr-2 h-4 w-4 animate-calm-busy" />
               ) : (
                 <PlusCircle className="mr-2 h-4 w-4" />
               )}

@@ -96,7 +96,7 @@ export const MobileNav = ({
             >
               <RefreshCw
                 className={`h-5 w-5 ${
-                  isRefreshing ? "animate-spin-smooth text-accent" : "text-accent"
+                  isRefreshing ? "animate-calm-busy text-accent" : "text-accent"
                 }`}
               />
             </button>

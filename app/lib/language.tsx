@@ -101,6 +101,9 @@ const translations: TranslationDictionary = {
       },
     },
     dashboard: {
+      title: "Overview",
+      subtitle:
+        "Monitor your node's health, channels, and transaction activity at a glance.",
       errors: {
         fetch: "Failed to fetch dashboard data: {{message}}",
       },
@@ -384,6 +387,9 @@ const translations: TranslationDictionary = {
       },
     },
     dashboard: {
+      title: "Resumen",
+      subtitle:
+        "Supervisa la salud de tu nodo, sus canales y la actividad de transacciones de un vistazo.",
       errors: {
         fetch: "No se pudo obtener la información del panel: {{message}}",
       },

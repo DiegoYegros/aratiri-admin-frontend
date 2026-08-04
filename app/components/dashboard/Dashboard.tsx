@@ -74,7 +74,7 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
     return (
       <main className="flex-grow flex items-center justify-center">
         <Server
-          className="w-16 h-16 text-accent animate-spin-smooth"
+          className="w-16 h-16 text-accent animate-calm-busy"
           aria-label={t("admin.loading")}
           role="img"
         />
@@ -88,6 +88,25 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
       {error && (
         <Alert variant="danger" className="mb-6 text-left">{error}</Alert>
       )}
+
+      <div className="relative mb-8 overflow-hidden rounded-2xl border border-panel-edge bg-panel px-6 py-6">
+        <div
+          className="pointer-events-none absolute inset-0"
+          aria-hidden="true"
+          style={{
+            backgroundImage:
+              "radial-gradient(90% 70% at 50% 45%, rgba(201,162,39,0.08), transparent 58%)",
+          }}
+        />
+        <div className="relative z-10">
+          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+            {t("dashboard.title")}
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            {t("dashboard.subtitle")}
+          </p>
+        </div>
+      </div>
 
       {nodeInfo && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
@@ -141,9 +160,7 @@ export const Dashboard = ({ refreshKey }: { refreshKey: number }) => {
           {channelBalance && <LiquidityPieChart data={channelBalance} />}
         </div>
         <div className="min-w-0">
-          {transactionStats.length > 0 && (
-            <TransactionLineChart data={transactionStats} />
-          )}
+          <TransactionLineChart data={transactionStats} />
         </div>
       </div>
       </div>

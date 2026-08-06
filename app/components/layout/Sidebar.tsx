@@ -8,6 +8,7 @@ import {
   Settings as SettingsIcon,
   Users,
   Wallet,
+  Webhook,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
@@ -46,6 +47,7 @@ export const Sidebar = ({
       { key: "wallet", label: t("navigation.wallet"), icon: Wallet },
       { key: "channels", label: t("navigation.channels"), icon: Link2 },
       { key: "peers", label: t("navigation.peers"), icon: Users },
+      { key: "webhooks", label: t("navigation.webhooks"), icon: Webhook },
       { key: "settings", label: t("navigation.settings"), icon: SettingsIcon },
     ],
     [t]

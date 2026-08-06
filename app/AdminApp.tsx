@@ -11,8 +11,15 @@ import { WalletDashboard } from "./components/wallet/WalletDashboard";
 import { apiCall } from "./lib/api";
 import { useLanguage } from "./lib/language";
 import { SettingsView } from "./components/settings/SettingsView";
+import { WebhooksView } from "./components/webhooks/WebhooksView";
 
-type ViewKey = "dashboard" | "wallet" | "channels" | "peers" | "settings";
+type ViewKey =
+  | "dashboard"
+  | "wallet"
+  | "channels"
+  | "peers"
+  | "webhooks"
+  | "settings";
 
 type StoredAuthErrorKey =
   | "auth.errors.noPermission"
@@ -46,6 +53,8 @@ const AdminAppContent = () => {
   const [authErrorKey, setAuthErrorKey] = useState<StoredAuthErrorKey>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  /** Blocks sidebar/mobile nav while a non-dismissible secret reveal is open. */
+  const [navigationLocked, setNavigationLocked] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -152,7 +161,10 @@ const AdminAppContent = () => {
     setIsMobileMenuOpen((prev) => !prev);
   };
 
-  const handleMobileNavigate = (view: string) => {
+  const handleNavigate = (view: string) => {
+    if (navigationLocked) {
+      return;
+    }
     setActiveView(view as ViewKey);
     setIsMobileMenuOpen(false);
   };
@@ -167,6 +179,8 @@ const AdminAppContent = () => {
         return <ChannelsDashboard />;
       case "peers":
         return <PeersDashboard />;
+      case "webhooks":
+        return <WebhooksView onSecretRevealChange={setNavigationLocked} />;
       case "settings":
         return <SettingsView />;
       default:
@@ -185,28 +199,29 @@ const AdminAppContent = () => {
   if (isAuthenticated) {
     return (
       <div className="min-h-screen bg-background text-foreground font-sans flex">
-        <Sidebar
-          isRefreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          onLogout={handleLogout}
-          activeView={activeView}
-          onNavigate={(view) => {
-            setActiveView(view as ViewKey);
-            setIsMobileMenuOpen(false);
-          }}
-          isSidebarCollapsed={isSidebarCollapsed}
-          onToggleCollapse={toggleSidebar}
-        />
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
-          <MobileNav
+        <div inert={navigationLocked ? true : undefined}>
+          <Sidebar
             isRefreshing={isRefreshing}
             onRefresh={handleRefresh}
             onLogout={handleLogout}
             activeView={activeView}
-            onNavigate={handleMobileNavigate}
-            isMenuOpen={isMobileMenuOpen}
-            onToggleMenu={toggleMobileMenu}
+            onNavigate={handleNavigate}
+            isSidebarCollapsed={isSidebarCollapsed}
+            onToggleCollapse={toggleSidebar}
           />
+        </div>
+        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+          <div inert={navigationLocked ? true : undefined}>
+            <MobileNav
+              isRefreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              onLogout={handleLogout}
+              activeView={activeView}
+              onNavigate={handleNavigate}
+              isMenuOpen={isMobileMenuOpen}
+              onToggleMenu={toggleMobileMenu}
+            />
+          </div>
           <div className="flex-1 overflow-y-auto pt-[4.5rem] sm:pt-0">
             {activeViewContent}
           </div>

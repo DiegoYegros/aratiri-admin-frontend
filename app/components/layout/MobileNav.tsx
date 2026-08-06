@@ -9,6 +9,7 @@ import {
   Settings as SettingsIcon,
   Users,
   Wallet,
+  Webhook,
   X,
   RefreshCw,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const NAV_ITEMS: Array<{
   { key: "wallet", icon: Wallet },
   { key: "channels", icon: Link2 },
   { key: "peers", icon: Users },
+  { key: "webhooks", icon: Webhook },
   { key: "settings", icon: SettingsIcon },
 ];
 

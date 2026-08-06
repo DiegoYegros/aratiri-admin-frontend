@@ -29,6 +29,78 @@ export interface WalletBalanceResponse {
 export interface NewAddressResponse {
   address: string;
 }
+
+/** Known webhook event types from backend README. */
+export const WEBHOOK_EVENT_TYPES = [
+  "invoice.created",
+  "invoice.settled",
+  "payment.accepted",
+  "payment.succeeded",
+  "payment.failed",
+  "onchain.deposit.confirmed",
+  "account.balance_changed",
+  "node_operation.unknown_outcome",
+  "webhook.test",
+] as const;
+
+export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
+
+export type WebhookDeliveryStatus = "PENDING" | "SUCCEEDED" | "FAILED";
+
+export const WEBHOOK_DELIVERY_STATUSES: WebhookDeliveryStatus[] = [
+  "PENDING",
+  "SUCCEEDED",
+  "FAILED",
+];
+
+export interface WebhookEndpointResponse {
+  id: string;
+  name: string;
+  url: string;
+  eventTypes: string[];
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+}
+
+export interface WebhookSecretResponse {
+  id: string;
+  signingSecret: string;
+}
+
+export interface CreateWebhookEndpointRequest {
+  name: string;
+  url: string;
+  eventTypes: string[];
+  enabled: boolean;
+}
+
+export type UpdateWebhookEndpointRequest = CreateWebhookEndpointRequest;
+
+export interface WebhookDeliveryResponse {
+  id: string;
+  eventId: string;
+  endpointId: string;
+  status: WebhookDeliveryStatus | string;
+  attemptCount: number;
+  nextAttemptAt: string | null;
+  responseStatus: number | null;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deliveredAt: string | null;
+  eventType: string;
+}
+
+export interface ListWebhookDeliveriesParams {
+  endpointId?: string;
+  status?: WebhookDeliveryStatus | "";
+  eventType?: string;
+  limit?: number;
+}
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:2100/v1";
 
@@ -130,7 +202,9 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     }
     return {};
   } catch (error) {
-    console.error("API call error:", error);
+    const message =
+      error instanceof Error ? error.message : "An unknown error occurred.";
+    console.error("API call error:", message);
     throw error;
   }
 };

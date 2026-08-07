@@ -51,6 +51,6 @@ jobs:
             ghcr.io/diegoyegros/aratiri-admin:latest
             ghcr.io/diegoyegros/aratiri-admin:${{ github.sha }}
           build-args: |
-            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL || 'http://167.233.193.136:2100/v1' }}
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL || 'https://api.aratiri.net/v1' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

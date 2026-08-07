@@ -8,7 +8,7 @@ import { Sidebar } from "./components/layout/Sidebar";
 import { MobileNav } from "./components/layout/MobileNav";
 import { PeersDashboard } from "./components/peers/PeersDashboard";
 import { WalletDashboard } from "./components/wallet/WalletDashboard";
-import { apiCall } from "./lib/api";
+import { apiCall, revokeRefreshToken } from "./lib/api";
 import { useLanguage } from "./lib/language";
 import { SettingsView } from "./components/settings/SettingsView";
 import { WebhooksView } from "./components/webhooks/WebhooksView";
@@ -134,6 +134,7 @@ const AdminAppContent = () => {
   }, []);
 
   const handleLogout = () => {
+    revokeRefreshToken();
     localStorage.removeItem("aratiri_accessToken");
     localStorage.removeItem("aratiri_refreshToken");
     setToken(null);

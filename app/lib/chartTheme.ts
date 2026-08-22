@@ -1,7 +1,7 @@
 import { LanguageCode } from "./language";
 
 /**
- * Quiet Voltage chart theme — single source of truth for recharts SVG props.
+ * Quiet Voltage chart theme. Single source of truth for recharts SVG props.
  * Hex values kept in sync with the tokens in app/globals.css (recharts needs
  * concrete strings, CSS variables are not usable here).
  */
